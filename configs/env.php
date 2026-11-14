@@ -1,6 +1,12 @@
 <?php
 
-define('BASE_URL',          'http://localhost/BaseExam/');
+// Tự động nhận diện BASE_URL linh hoạt theo môi trường đang chạy (Laragon / Localhost / PHP server)
+$protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? "https://" : "http://";
+$host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+$scriptDir = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? ''));
+$baseUrl = rtrim($protocol . $host . $scriptDir, '/') . '/';
+
+define('BASE_URL',          $baseUrl);
 
 define('PATH_ROOT',         __DIR__ . '/../');
 
