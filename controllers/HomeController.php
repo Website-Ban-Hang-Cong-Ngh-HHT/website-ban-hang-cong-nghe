@@ -7,32 +7,32 @@
 class HomeController
 {
     // 1. Trang chủ TECH STORE
-    public function index() 
+    public function index()
     {
         $title = 'TECH STORE - Siêu Thị Đồ Công Nghệ Chính Hãng';
         $view = 'home';
         require_once PATH_VIEW . 'main.php';
     }
 
-    // 2. Trang đăng nhập tài khoản (Admin demo)
-    public function login()
-    {
-        $title = 'Đăng nhập - TECH STORE';
-        $view = 'login';
-        require_once PATH_VIEW . 'main.php';
-    }
-
-    // 3. Trang đăng ký tài khoản khách hàng mới
-    public function register()
-    {
-        $title = 'Đăng ký tài khoản - TECH STORE';
-        $view = 'register';
-        require_once PATH_VIEW . 'main.php';
-    }
-
-    // 4. Trang quản trị hệ thống dành cho Admin
+    // 2. Trang quản trị hệ thống dành cho Admin (bắt buộc đăng nhập quyền admin)
     public function admin()
     {
+        if (!is_admin()) {
+            flash_set('error', 'Bạn cần đăng nhập bằng tài khoản Admin để truy cập trang quản trị!');
+            redirect('index.php?action=login');
+        }
+
+        // Danh sách khách hàng thật từ MySQL để hiển thị ở tab "Quản lý khách hàng"
+        $customers = array_map(static function (array $user): array {
+            return [
+                'fullName'  => $user['full_name'],
+                'username'  => $user['username'],
+                'email'     => $user['email'],
+                'phone'     => $user['phone'],
+                'createdAt' => $user['created_at'],
+            ];
+        }, (new UserModel)->allCustomers());
+
         $title = 'Trang Quản Trị Hệ Thống - TECH STORE';
         $view = 'admin';
         require_once PATH_VIEW . 'main.php';

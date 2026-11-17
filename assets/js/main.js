@@ -1237,30 +1237,9 @@ function handleCheckoutDemo() {
 // =============================================================
 // PHẦN 9: XỬ LÝ ĐĂNG KÝ / ĐĂNG NHẬP / ĐĂNG XUẤT VỚI LOCALSTORAGE
 // =============================================================
-const AUTH_STORAGE_KEY = 'techstore_user';
-const REGISTERED_USERS_KEY = 'techstore_registered_users';
-
-const ADMIN_CREDENTIALS = {
-    username: "admin",
-    password: "admin123",
-    fullName: "Quản trị viên (Admin)",
-    role: "admin"
-};
-
+// Trạng thái đăng nhập được PHP truyền sang qua window.CURRENT_USER (session + MySQL)
 function getCurrentUser() {
-    const data = localStorage.getItem(AUTH_STORAGE_KEY);
-    return data ? JSON.parse(data) : null;
-}
-
-function getRegisteredUsers() {
-    const data = localStorage.getItem(REGISTERED_USERS_KEY);
-    return data ? JSON.parse(data) : [];
-}
-
-function saveRegisteredUser(newUser) {
-    const users = getRegisteredUsers();
-    users.push(newUser);
-    localStorage.setItem(REGISTERED_USERS_KEY, JSON.stringify(users));
+    return (typeof window.CURRENT_USER !== 'undefined' && window.CURRENT_USER) ? window.CURRENT_USER : null;
 }
 
 function updateAuthUI() {
@@ -1334,165 +1313,26 @@ function updateAuthUI() {
     }
 }
 
-function handleRegisterFormSubmit(event) {
-    if (event) event.preventDefault();
-
-    const fullNameInput = document.getElementById('registerFullName');
-    const usernameInput = document.getElementById('registerUsername');
-    const emailInput = document.getElementById('registerEmail');
-    const phoneInput = document.getElementById('registerPhone');
-    const passwordInput = document.getElementById('registerPassword');
-    const confirmPasswordInput = document.getElementById('registerConfirmPassword');
-    const alertBox = document.getElementById('registerAlert');
-
-    if (!fullNameInput || !usernameInput || !emailInput || !phoneInput || !passwordInput || !confirmPasswordInput) return;
-
-    const fullName = fullNameInput.value.trim();
-    const username = usernameInput.value.trim().toLowerCase();
-    const email = emailInput.value.trim().toLowerCase();
-    const phone = phoneInput.value.trim();
-    const password = passwordInput.value;
-    const confirmPassword = confirmPasswordInput.value;
-
-    function showError(msg) {
-        if (alertBox) {
-            alertBox.className = 'alert alert-danger mb-3';
-            alertBox.innerHTML = `<i class="fa-solid fa-triangle-exclamation me-2"></i> ${msg}`;
-            alertBox.style.display = 'block';
-        } else {
-            alert(msg);
-        }
-    }
-
-    if (!fullName || !username || !email || !phone || !password || !confirmPassword) {
-        showError('Vui lòng nhập đầy đủ tất cả các trường!');
-        return;
-    }
-
-    if (username === ADMIN_CREDENTIALS.username.toLowerCase()) {
-        showError("Tên đăng nhập 'admin' là tài khoản quản trị hệ thống!");
-        return;
-    }
-
-    const registeredUsers = getRegisteredUsers();
-    if (registeredUsers.some(u => u.username.toLowerCase() === username)) {
-        showError(`Tên đăng nhập "${username}" đã có người sử dụng!`);
-        return;
-    }
-    if (registeredUsers.some(u => u.email.toLowerCase() === email)) {
-        showError(`Địa chỉ email "${email}" đã được đăng ký tài khoản khác!`);
-        return;
-    }
-
-    if (password.length < 6) {
-        showError('Mật khẩu phải có tối thiểu 6 ký tự!');
-        return;
-    }
-    if (password !== confirmPassword) {
-        showError('Mật khẩu nhập lại không trùng khớp!');
-        return;
-    }
-
-    const newCustomer = {
-        fullName: fullName,
-        username: username,
-        email: email,
-        phone: phone,
-        password: password,
-        role: 'customer',
-        createdAt: new Date().toISOString()
-    };
-
-    saveRegisteredUser(newCustomer);
-
-    if (alertBox) {
-        alertBox.className = 'alert alert-success mb-3';
-        alertBox.innerHTML = `<i class="fa-solid fa-circle-check me-2"></i> <strong>Đăng ký thành công!</strong> Đang chuyển hướng...`;
-        alertBox.style.display = 'block';
-    }
-
-    showToast(`Chúc mừng ${fullName}! Bạn đã đăng ký thành công.`, 'success');
-
-    setTimeout(() => {
-        window.location.href = 'index.php?action=login';
-    }, 1200);
-}
-
-function handleLoginFormSubmit(event) {
-    if (event) event.preventDefault();
-
-    const usernameInput = document.getElementById('loginUsername');
-    const passwordInput = document.getElementById('loginPassword');
-    const alertBox = document.getElementById('loginAlert');
-
-    if (!usernameInput || !passwordInput) return;
-
-    const inputAccount = usernameInput.value.trim().toLowerCase();
-    const inputPassword = passwordInput.value.trim();
-
-    if (!inputAccount || !inputPassword) {
-        if (alertBox) {
-            alertBox.className = 'alert alert-warning mb-3';
-            alertBox.innerText = 'Vui lòng nhập đầy đủ tài khoản và mật khẩu!';
-            alertBox.style.display = 'block';
-        }
-        return;
-    }
-
-    // Đăng nhập Admin
-    if (inputAccount === ADMIN_CREDENTIALS.username.toLowerCase() && inputPassword === ADMIN_CREDENTIALS.password) {
-        const adminData = {
-            username: ADMIN_CREDENTIALS.username,
-            fullName: ADMIN_CREDENTIALS.fullName,
-            role: 'admin',
-            loginAt: new Date().toISOString()
-        };
-        localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(adminData));
-        updateAuthUI();
-        window.location.href = 'index.php';
-        return;
-    }
-
-    // Đăng nhập Khách hàng
-    const registeredUsers = getRegisteredUsers();
-    const matchedCustomer = registeredUsers.find(u => 
-        (u.username.toLowerCase() === inputAccount || u.email.toLowerCase() === inputAccount) && 
-        u.password === inputPassword
-    );
-
-    if (matchedCustomer) {
-        const customerData = {
-            username: matchedCustomer.username,
-            fullName: matchedCustomer.fullName,
-            email: matchedCustomer.email,
-            phone: matchedCustomer.phone,
-            role: 'customer',
-            loginAt: new Date().toISOString()
-        };
-        localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(customerData));
-        updateAuthUI();
-        window.location.href = 'index.php';
-        return;
-    }
-
-    if (alertBox) {
-        alertBox.className = 'alert alert-danger mb-3';
-        alertBox.innerHTML = '<i class="fa-solid fa-triangle-exclamation me-2"></i> Sai tài khoản hoặc mật khẩu!';
-        alertBox.style.display = 'block';
-    }
-}
-
 function handleLogout() {
-    if (confirm('Bạn có chắc chắn muốn đăng xuất tài khoản?')) {
-        localStorage.removeItem(AUTH_STORAGE_KEY);
-        updateAuthUI();
-        showToast('Đã đăng xuất thành công!', 'info');
-
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('action') === 'admin') {
-            window.location.href = 'index.php';
-        }
+    if (!confirm('Bạn có chắc chắn muốn đăng xuất tài khoản?')) {
+        return;
     }
+
+    // Gửi yêu cầu POST kèm CSRF token để PHP huỷ session đăng nhập
+    const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = 'index.php?action=logout';
+    form.style.display = 'none';
+
+    const tokenInput = document.createElement('input');
+    tokenInput.type = 'hidden';
+    tokenInput.name = '_csrf';
+    tokenInput.value = csrfMeta ? csrfMeta.getAttribute('content') : '';
+    form.appendChild(tokenInput);
+
+    document.body.appendChild(form);
+    form.submit();
 }
 
 function checkAdminAccess() {
@@ -2007,15 +1847,5 @@ document.addEventListener('DOMContentLoaded', () => {
         searchForm.addEventListener('submit', handleSearch);
     }
 
-    // 6. Lắng nghe form đăng nhập
-    const loginForm = document.getElementById('loginForm');
-    if (loginForm) {
-        loginForm.addEventListener('submit', handleLoginFormSubmit);
-    }
-
-    // 7. Lắng nghe form đăng ký
-    const registerForm = document.getElementById('registerForm');
-    if (registerForm) {
-        registerForm.addEventListener('submit', handleRegisterFormSubmit);
-    }
+    // 6. Form đăng nhập / đăng ký được xử lý server-side (AuthController + MySQL)
 });

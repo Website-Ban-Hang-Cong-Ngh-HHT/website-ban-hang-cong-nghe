@@ -26,7 +26,13 @@ define('DB_HOST',     'localhost');
 define('DB_PORT',     '3306');
 define('DB_USERNAME', 'root');
 define('DB_PASSWORD', '');
-define('DB_NAME',     '');
+// Tên CSDL MySQL (đổi tại đây nếu CSDL của bạn có tên khác)
+define('DB_NAME',     'hhta');
+
+// Chế độ lưu mật khẩu:
+//   'plain' -> lưu chữ/số bình thường trong MySQL (dễ xem, CHỈ dùng cho học tập/demo)
+//   'hash'  -> mã hoá bcrypt (an toàn, khuyên dùng khi chạy thật)
+define('PASSWORD_MODE', 'plain');
 define('DB_OPTIONS', [
     PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
