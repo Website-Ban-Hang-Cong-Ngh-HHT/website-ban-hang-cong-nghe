@@ -6,6 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= $title ?? 'TECH STORE - Siêu Thị Đồ Công Nghệ Chính Hãng' ?></title>
 
+    <!-- Token CSRF dùng cho các request POST (đăng xuất...) -->
+    <meta name="csrf-token" content="<?= e(csrf_token()) ?>">
+
     <!-- 1. Phông chữ hiện đại Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -24,7 +27,10 @@
 <body>
 
 <?php
-$isAdminPage = (isset($view) && $view === 'admin');
+$isAdminPage  = (isset($view) && $view === 'admin');
+$authUser     = current_user();
+$isAdminUser  = ($authUser['role'] ?? '') === 'admin';
+$authName     = $authUser['full_name'] ?? ($authUser['username'] ?? 'Khách');
 ?>
 
 <?php if ($isAdminPage): ?>
@@ -94,7 +100,7 @@ $isAdminPage = (isset($view) && $view === 'admin');
                     </button>
 
                     <!-- Khối hiển thị khi CHƯA đăng nhập -->
-                    <div id="authGuestBox" class="auth-guest-box">
+                    <div id="authGuestBox" class="auth-guest-box" style="<?= $authUser ? 'display: none;' : 'display: flex;' ?>">
                         <a href="index.php?action=login" class="header-action-btn btn-login-nav">
                             <i class="fa-regular fa-user fa-lg text-primary"></i>
                             <span>Đăng nhập</span>
@@ -102,18 +108,18 @@ $isAdminPage = (isset($view) && $view === 'admin');
                     </div>
 
                     <!-- Khối hiển thị khi ĐÃ đăng nhập (Admin hoặc Khách hàng) -->
-                    <div id="authUserBox" class="user-info-box" style="display: none;">
+                    <div id="authUserBox" class="user-info-box" style="<?= $authUser ? 'display: flex;' : 'display: none;' ?>">
                         <div class="dropdown">
                             <button class="header-action-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="fa-solid fa-user-shield text-primary" id="authUserIcon"></i>
-                                <span id="authUserName">Admin</span>
-                                <span class="admin-badge ms-1" id="authUserBadge">ADMIN</span>
+                                <i class="fa-solid <?= $isAdminUser ? 'fa-user-shield' : 'fa-circle-user' ?> text-primary" id="authUserIcon"></i>
+                                <span id="authUserName"><?= e($authName) ?></span>
+                                <span class="<?= $isAdminUser ? 'admin-badge' : 'customer-badge' ?> ms-1" id="authUserBadge"><?= $isAdminUser ? 'ADMIN' : 'KHÁCH HÀNG' ?></span>
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
                                 <li>
-                                    <h6 class="dropdown-header text-uppercase" id="authDropdownHeader">Bảng điều khiển</h6>
+                                    <h6 class="dropdown-header text-uppercase" id="authDropdownHeader"><?= $isAdminUser ? 'Bảng điều khiển' : 'Tài khoản của tôi' ?></h6>
                                 </li>
-                                <li id="adminDashboardLink">
+                                <li id="adminDashboardLink" style="<?= $isAdminUser ? '' : 'display: none;' ?>">
                                     <a class="dropdown-item py-2" href="index.php?action=admin">
                                         <i class="fa-solid fa-gauge-high text-primary me-2"></i> Trang quản trị Admin
                                     </a>
@@ -180,7 +186,7 @@ $isAdminPage = (isset($view) && $view === 'admin');
                         </a>
                     </li>
                     <!-- Menu Quản trị chỉ hiển thị khi đã đăng nhập Admin -->
-                    <li class="nav-item" id="adminNavLink" style="display: none;">
+                    <li class="nav-item" id="adminNavLink" style="<?= $isAdminUser ? 'display: block;' : 'display: none;' ?>">
                         <a class="nav-link text-warning fw-bold" href="index.php?action=admin">
                             <i class="fa-solid fa-gear"></i> Quản trị hệ thống
                         </a>
@@ -356,6 +362,25 @@ $isAdminPage = (isset($view) && $view === 'admin');
     <!-- ========================================================= -->
     <!-- Bootstrap 5.3.3 Bundle JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Trạng thái đăng nhập do PHP (session MySQL) truyền sang JavaScript -->
+    <script>
+        window.CURRENT_USER = <?php
+            $jsUser = $authUser ? [
+                'id'       => (int) $authUser['id'],
+                'fullName' => $authName,
+                'username' => $authUser['username'],
+                'email'    => $authUser['email'],
+                'phone'    => $authUser['phone'],
+                'role'     => $authUser['role'],
+            ] : null;
+
+            echo json_encode(
+                $jsUser,
+                JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+            ) ?: 'null';
+        ?>;
+    </script>
 
     <!-- File JavaScript chính điều khiển toàn bộ chức năng -->
     <script src="assets/js/main.js"></script>

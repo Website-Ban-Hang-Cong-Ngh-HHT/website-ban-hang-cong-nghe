@@ -135,7 +135,7 @@
                     <div class="admin-profile-pill" data-bs-toggle="dropdown" aria-expanded="false">
                         <div class="admin-avatar">AD</div>
                         <div class="d-none d-md-block text-start">
-                            <div class="fw-bold small text-dark leading-none" id="topbarAdminName">Admin</div>
+                            <div class="fw-bold small text-dark leading-none" id="topbarAdminName"><?= e(current_user()['full_name'] ?? 'Admin') ?></div>
                             <span class="admin-badge" style="font-size: 0.65rem; padding: 1px 6px;">ADMIN</span>
                         </div>
                         <i class="fa-solid fa-chevron-down small text-muted ms-1"></i>
@@ -559,7 +559,7 @@
                                 </tr>
                             </thead>
                             <tbody id="adminCustomersTableBody">
-                                <!-- Đổ dữ liệu từ techstore_registered_users -->
+                                <!-- Đổ dữ liệu từ bảng users (MySQL) -->
                             </tbody>
                         </table>
                     </div>
@@ -584,7 +584,7 @@
                             <div class="bg-light p-3 rounded-3 small text-start">
                                 <div class="py-1"><b>Tài khoản:</b> <code id="accountsAdminUser">admin</code></div>
                                 <div class="py-1"><b>Trạng thái:</b> <span class="text-success fw-bold"><i class="fa-solid fa-circle-dot me-1"></i>Online</span></div>
-                                <div class="py-1"><b>Lưu trữ:</b> LocalStorage</div>
+                                <div class="py-1"><b>Lưu trữ:</b> MySQL (bảng <code>users</code>)</div>
                             </div>
                             <button class="btn btn-danger w-100 mt-3 fw-bold" onclick="handleLogout()">
                                 <i class="fa-solid fa-arrow-right-from-bracket me-2"></i> Đăng Xuất
@@ -1119,6 +1119,14 @@
     </div>
 </div>
 
+<!-- Danh sách khách hàng thật từ MySQL (do HomeController truyền sang) -->
+<script>
+    window.ADMIN_CUSTOMERS = <?= json_encode(
+        $customers ?? [],
+        JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+    ) ?: '[]' ?>;
+</script>
+
 <!-- ========================================================= -->
 <!-- SCRIPT ĐIỀU KHIỂN RIÊNG CHO TRANG ADMIN                    -->
 <!-- ========================================================= -->
@@ -1356,7 +1364,10 @@ function renderAdminCustomersData() {
     const tableBody = document.getElementById('adminCustomersTableBody');
     if (!tableBody) return;
 
-    const registeredUsers = typeof getRegisteredUsers === 'function' ? getRegisteredUsers() : [];
+    const dbCustomers = Array.isArray(window.ADMIN_CUSTOMERS) ? window.ADMIN_CUSTOMERS : [];
+    const registeredUsers = dbCustomers.length
+        ? dbCustomers
+        : (typeof getRegisteredUsers === 'function' ? getRegisteredUsers() : []);
 
     const defaultCustomers = [
         { fullName: "Nguyễn Văn An", username: "nguyenvana", email: "nguyenvana@gmail.com", phone: "0988123456", createdAt: "2026-11-10T08:30:00Z" },

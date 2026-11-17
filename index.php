@@ -1,5 +1,8 @@
 <?php 
 
+// Luôn trả về UTF-8 để tiếng Việt không bị lỗi font trên mọi môi trường
+header('Content-Type: text/html; charset=UTF-8');
+
 if (session_status() === PHP_SESSION_NONE) {
     @session_start();
 }
