@@ -26,6 +26,7 @@ Website thương mại điện tử chuyên bán các sản phẩm công nghệ 
      - Thông tin demo: **`admin`** | Mật khẩu: **`admin123`**
      - Đăng nhập xong hiển thị huy hiệu **`ADMIN`** màu vàng trên Header.
      - Có quyền truy cập Bảng điều khiển Quản trị (`index.php?action=admin`).
+     - **Chức năng Quản trị & Sửa Sản Phẩm:** Cho phép Admin xem danh sách sản phẩm, chỉnh sửa trực tiếp thông tin (Tên, Danh mục, Giá bán, Giá khuyến mãi, Tồn kho, Trạng thái kinh doanh, Hình ảnh, Mô tả) qua cửa sổ Modal hiện đại, lưu trữ tự động vào `localStorage` không bị mất dữ liệu khi F5.
    - **Tài khoản Khách hàng (Customer):**
      - Trang đăng ký riêng: `index.php?action=register` với đầy đủ kiểm tra hợp lệ (Họ tên, Username, Email, Số điện thoại, Mật khẩu >= 6 ký tự).
      - Đăng ký thành công -> Có thể dùng tài khoản hoặc email vừa tạo để đăng nhập ngay lập tức.

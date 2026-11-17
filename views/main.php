@@ -23,9 +23,22 @@
 
 <body>
 
+<?php
+$isAdminPage = (isset($view) && $view === 'admin');
+?>
+
+<?php if ($isAdminPage): ?>
     <!-- ========================================================= -->
+    <!-- GIAO DIỆN CHUYÊN BIỆT DÀNH CHO TRANG QUẢN TRỊ ADMIN -->
+    <!-- ========================================================= -->
+    <?php require_once PATH_VIEW . 'admin.php'; ?>
+
+<?php else: ?>
+    <!-- ========================================================= -->
+    <!-- GIAO DIỆN DÀNH CHO KHÁCH HÀNG (TRANG CHỦ, ĐĂNG NHẬP, ĐĂNG KÝ) -->
+    <!-- ========================================================= -->
+
     <!-- PHẦN 1: THANH THÔNG TIN TRÊN CÙNG (TOP BAR) -->
-    <!-- ========================================================= -->
     <div class="top-bar d-none d-md-block">
         <div class="container d-flex justify-content-between align-items-center">
             <div>
@@ -39,9 +52,7 @@
         </div>
     </div>
 
-    <!-- ========================================================= -->
     <!-- PHẦN 2: HEADER CHÍNH (LOGO, TÌM KIẾM, GIỎ HÀNG, TÀI KHOẢN) -->
-    <!-- ========================================================= -->
     <header class="main-header">
         <div class="container">
             <div class="row align-items-center">
@@ -127,9 +138,7 @@
         </div>
     </header>
 
-    <!-- ========================================================= -->
     <!-- PHẦN 3: MENU ĐIỀU HƯỚNG CHÍNH (NAVBAR) -->
-    <!-- ========================================================= -->
     <nav class="navbar navbar-expand-lg main-nav p-0">
         <div class="container">
             <!-- Nút bật menu trên điện thoại -->
@@ -187,9 +196,7 @@
         </div>
     </nav>
 
-    <!-- ========================================================= -->
-    <!-- PHẦN 4: NỘI DUNG CHÍNH (VIEW CONTENT ĐƯỢC NHÚNG ĐỘNG) -->
-    <!-- ========================================================= -->
+    <!-- PHẦN 4: NỘI DUNG CHÍNH (VIEW CONTENT) -->
     <main>
         <?php
         if (isset($view)) {
@@ -198,9 +205,7 @@
         ?>
     </main>
 
-    <!-- ========================================================= -->
-    <!-- PHẦN 5: FOOTER CHÂN TRANG (THÔNG TIN CỬA HÀNG, ĐỊA CHỈ, LIÊN HỆ) -->
-    <!-- ========================================================= -->
+    <!-- PHẦN 5: FOOTER CHÂN TRANG CHO KHÁCH HÀNG -->
     <footer class="main-footer">
         <div class="container">
             <div class="row g-4">
@@ -276,16 +281,20 @@
         </div>
     </footer>
 
+<?php endif; ?>
+
     <!-- ========================================================= -->
     <!-- PHẦN 6: CÁC MODAL & TOAST TIỆN ÍCH -->
     <!-- ========================================================= -->
 
-    <!-- Modal 1: Chi tiết sản phẩm -->
+    <!-- Modal 1: Chi tiết sản phẩm & Chọn phiên bản biến thể -->
     <div class="modal fade" id="productDetailModal" tabindex="-1" aria-labelledby="productDetailModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content border-0 shadow">
                 <div class="modal-header border-0 pb-0">
-                    <h5 class="modal-title fw-bold" id="productDetailModalLabel">Thông Tin Chi Tiết Sản Phẩm</h5>
+                    <h5 class="modal-title fw-bold" id="productDetailModalLabel">
+                        <i class="fa-solid fa-mobile-screen-button text-primary me-2"></i>Chi Tiết Sản Phẩm & Chọn Phiên Bản
+                    </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
                 </div>
                 <div class="modal-body p-4" id="productDetailModalBody">
@@ -295,28 +304,30 @@
         </div>
     </div>
 
-    <!-- Modal 2: Giỏ hàng -->
+    <!-- Modal 2: Giỏ hàng & Phiên bản đã chọn -->
     <div class="modal fade" id="cartModal" tabindex="-1" aria-labelledby="cartModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-md modal-dialog-centered">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content border-0 shadow">
                 <div class="modal-header bg-primary text-white">
                     <h5 class="modal-title fw-bold" id="cartModalLabel">
-                        <i class="fa-solid fa-cart-shopping me-2"></i> Giỏ Hàng Của Bạn
+                        <i class="fa-solid fa-cart-shopping me-2"></i> Giỏ Hàng Của Bạn (Chi Tiết Từng Phiên Bản)
                     </h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Đóng"></button>
                 </div>
-                <div class="modal-body p-3" id="cartItemsContainer" style="max-height: 400px; overflow-y: auto;">
+                <div class="modal-body p-3" id="cartItemsContainer" style="max-height: 450px; overflow-y: auto;">
                     <!-- Danh sách sản phẩm trong giỏ được JavaScript render vào đây -->
                 </div>
                 <div class="modal-footer d-flex justify-content-between align-items-center" id="cartActionFooter">
                     <div>
-                        <span class="small text-muted d-block">Tổng tiền tạm tính:</span>
-                        <span class="h5 fw-bold text-danger mb-0" id="cartTotalPrice">0 ₫</span>
+                        <span class="small text-muted d-block">Tổng tiền thanh toán:</span>
+                        <span class="h4 fw-bold text-danger mb-0" id="cartTotalPrice">0 ₫</span>
                     </div>
                     <div class="d-flex gap-2">
-                        <button type="button" class="btn btn-outline-danger btn-sm" onclick="clearCart()">Xóa hết</button>
-                        <button type="button" class="btn btn-primary btn-sm px-3" onclick="handleCheckoutDemo()">
-                            <i class="fa-solid fa-credit-card me-1"></i> Thanh toán
+                        <button type="button" class="btn btn-outline-danger btn-sm" onclick="clearCart()">
+                            <i class="fa-regular fa-trash-can me-1"></i> Xóa hết
+                        </button>
+                        <button type="button" class="btn btn-primary btn-sm px-4 fw-bold" onclick="handleCheckoutDemo()">
+                            <i class="fa-solid fa-credit-card me-1"></i> Đặt hàng ngay
                         </button>
                     </div>
                 </div>

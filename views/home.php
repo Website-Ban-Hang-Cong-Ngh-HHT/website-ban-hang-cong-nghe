@@ -20,15 +20,15 @@
                     <div class="hero-slide-item" style="background-image: url('https://images.unsplash.com/photo-1556656793-08538906a9f8?w=1400&auto=format&fit=crop&q=80');">
                         <div class="hero-slide-overlay"></div>
                         <div class="hero-slide-content">
-                            <span class="badge-tag"><i class="fa-solid fa-fire me-1"></i> SIÊU PHẨM 2026</span>
-                            <h2>iPhone 16 Pro Max<br><span style="color: #60a5fa;">Titan Sa Mạc Đỉnh Cao</span></h2>
-                            <p>Chip Apple A18 Pro tiến trình 3nm, camera 48MP zoom 5x, trợ lý ảo thông minh Apple Intelligence.</p>
+                            <span class="badge-tag"><i class="fa-solid fa-fire me-1"></i> SIÊU PHẨM CÔNG NGHỆ 2026</span>
+                            <h2>iPhone 15 &amp; 16 Series<br><span style="color: #60a5fa;">Đa Sắc Màu - Đỉnh Hiệu Năng</span></h2>
+                            <p>Camera 48MP siêu nét, Dynamic Island thông minh, cổng USB-C và trọn bộ phiên bản màu sắc &amp; dung lượng mới nhất.</p>
                             <div class="d-flex gap-3">
                                 <a href="javascript:void(0)" onclick="filterCategory('phone')" class="btn btn-primary px-4 py-2 fw-bold">
                                     <i class="fa-solid fa-cart-shopping me-1"></i> Khám phá ngay
                                 </a>
                                 <a href="javascript:void(0)" onclick="showProductDetail(1)" class="btn btn-outline-light px-4 py-2 fw-bold">
-                                    Xem thông số
+                                    Xem iPhone 15
                                 </a>
                             </div>
                         </div>
