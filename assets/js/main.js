@@ -1139,6 +1139,46 @@ function getStoredOrders() {
     return data ? JSON.parse(data) : DEFAULT_DEMO_ORDERS;
 }
 
+function getCurrentUserOrders() {
+    const user = getCurrentUser();
+    if (!user || user.role === 'admin') return [];
+    return getStoredOrders().filter(order => Number(order.userId) === Number(user.id));
+}
+
+function escapeOrderHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, char => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+    })[char]);
+}
+
+function renderOrderHistory() {
+    const container = document.getElementById('orderHistoryContent');
+    if (!container) return;
+
+    const orders = getCurrentUserOrders();
+    if (!orders.length) {
+        container.innerHTML = '<div class="text-center text-muted py-5"><i class="fa-solid fa-box-open fa-3x mb-3 d-block"></i>Bạn chưa có đơn hàng nào.</div>';
+        return;
+    }
+
+    container.innerHTML = orders.map(order => {
+        const statusClass = order.status === 'completed' ? 'bg-success' : order.status === 'shipping' ? 'bg-primary' : order.status === 'cancelled' ? 'bg-secondary' : 'bg-warning text-dark';
+        const items = (order.items || []).map(item => `
+            <div class="d-flex justify-content-between gap-3 py-2 border-top small">
+                <span>${escapeOrderHtml(item.name)} <span class="text-muted">(${escapeOrderHtml(item.color)} · ${escapeOrderHtml(item.storage)}) × ${Number(item.quantity) || 0}</span></span>
+                <span class="text-nowrap fw-semibold">${formatCurrency((Number(item.price) || 0) * (Number(item.quantity) || 0))}</span>
+            </div>`).join('');
+        return `<article class="border rounded-3 p-3 mb-3">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+                <div><strong class="text-primary">#${escapeOrderHtml(order.id)}</strong><span class="text-muted ms-3 small">${escapeOrderHtml(order.date)}</span></div>
+                <span class="badge ${statusClass}">${escapeOrderHtml(order.statusText || 'Chờ xác nhận')}</span>
+            </div>
+            ${items || `<div class="small text-muted py-2">${escapeOrderHtml(order.productSummary)}</div>`}
+            <div class="d-flex justify-content-between border-top pt-2 mt-1 fw-bold"><span>Tổng thanh toán</span><span class="text-danger">${formatCurrency(Number(order.total) || 0)}</span></div>
+        </article>`;
+    }).join('');
+}
+
 function saveStoredOrders(orders) {
     localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(orders));
 }
@@ -1191,6 +1231,7 @@ function handleCheckoutDemo() {
 
     const newOrder = {
         id: orderId,
+        userId: currentUser ? Number(currentUser.id) : null,
         customer: currentUser ? (currentUser.fullName || currentUser.username) : "Khách vãng lai",
         phone: currentUser ? (currentUser.phone || "0988123456") : "0988123456",
         productSummary: productSummaryText,
