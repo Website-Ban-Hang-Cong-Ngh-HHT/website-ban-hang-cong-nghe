@@ -124,6 +124,13 @@ $authName     = $authUser['full_name'] ?? ($authUser['username'] ?? 'Khách');
                                         <i class="fa-solid fa-gauge-high text-primary me-2"></i> Trang quản trị Admin
                                     </a>
                                 </li>
+                                <?php if ($authUser && !$isAdminUser): ?>
+                                    <li>
+                                        <button class="dropdown-item py-2" type="button" data-bs-toggle="modal" data-bs-target="#orderHistoryModal" onclick="renderOrderHistory()">
+                                            <i class="fa-solid fa-clock-rotate-left text-primary me-2"></i> Lịch sử đơn hàng
+                                        </button>
+                                    </li>
+                                <?php endif; ?>
                                 <li>
                                     <a class="dropdown-item py-2" href="index.php">
                                         <i class="fa-solid fa-store text-success me-2"></i> Xem trang bán hàng
@@ -340,6 +347,20 @@ $authName     = $authUser['full_name'] ?? ($authUser['username'] ?? 'Khách');
             </div>
         </div>
     </div>
+
+    <?php if ($authUser && !$isAdminUser): ?>
+    <div class="modal fade" id="orderHistoryModal" tabindex="-1" aria-labelledby="orderHistoryModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title fw-bold" id="orderHistoryModalLabel"><i class="fa-solid fa-clock-rotate-left me-2"></i>Lịch sử đơn hàng</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                </div>
+                <div class="modal-body p-3" id="orderHistoryContent"></div>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
 
     <!-- Toast thông báo góc màn hình -->
     <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1080;">
