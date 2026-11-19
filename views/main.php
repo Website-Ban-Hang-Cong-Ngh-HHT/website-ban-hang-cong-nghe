@@ -339,8 +339,8 @@ $authName     = $authUser['full_name'] ?? ($authUser['username'] ?? 'Khách');
                         <button type="button" class="btn btn-outline-danger btn-sm" onclick="clearCart()">
                             <i class="fa-regular fa-trash-can me-1"></i> Xóa hết
                         </button>
-                        <button type="button" class="btn btn-primary btn-sm px-4 fw-bold" onclick="handleCheckoutDemo()">
-                            <i class="fa-solid fa-credit-card me-1"></i> Đặt hàng ngay
+                        <button type="button" class="btn btn-primary btn-sm px-4 fw-bold shadow-sm" onclick="goToCheckout()" title="Tiến hành thanh toán">
+                            <i class="fa-solid fa-credit-card me-1"></i> Tiến hành mua hàng
                         </button>
                     </div>
                 </div>

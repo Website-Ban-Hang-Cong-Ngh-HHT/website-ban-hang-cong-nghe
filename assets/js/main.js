@@ -1181,98 +1181,34 @@ function renderOrderHistory() {
 
 function saveStoredOrders(orders) {
     localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(orders));
+    localStorage.setItem('techstore_orders', JSON.stringify(orders));
 }
 
-// Xử lý khi khách hàng nhấn Thanh toán / Đặt hàng
-function handleCheckoutDemo() {
+// =============================================================
+// PHẦN 8: ĐIỀU HƯỚNG TỪ GIỎ HÀNG SANG TRANG THANH TOÁN (CHECKOUT)
+// =============================================================
+// Chuyển hướng từ modal giỏ hàng sang trang thanh toán riêng biệt
+function goToCheckout() {
     const cart = getCart();
-    if (cart.length === 0) {
-        showToast('Giỏ hàng trống!', 'error');
+    if (!cart || cart.length === 0) {
+        showToast('Giỏ hàng của bạn đang trống! Vui lòng chọn sản phẩm trước khi thanh toán.', 'warning');
         return;
     }
 
-    // 1. KIỂM TRA TỒN KHO CỦA TỪNG PHIÊN BẢN TRƯỚC KHI ĐẶT HÀNG
-    for (const item of cart) {
-        const product = PRODUCTS.find(p => p.id === item.id);
-        if (!product) {
-            alert(`Sản phẩm "${item.name}" không tồn tại trong hệ thống!`);
-            return;
-        }
-        const variant = product.variants ? product.variants.find(v => v.sku === item.sku) : null;
-        if (!variant) {
-            alert(`Phiên bản "${item.name} (${item.color} - ${item.storage})" không tồn tại!`);
-            return;
-        }
-        if (variant.stock < item.quantity) {
-            alert(`Rất tiếc! Phiên bản "${item.name} (${item.color} - ${item.storage})" hiện chỉ còn ${variant.stock} sản phẩm trong kho. Bạn đang đặt ${item.quantity} sản phẩm! Vui lòng điều chỉnh lại số lượng.`);
-            return;
-        }
-    }
-
-    // 2. TRỪ TỒN KHO THỰC TẾ CỦA ĐÚNG PHIÊN BẢN TRONG PRODUCTS
-    for (const item of cart) {
-        const product = PRODUCTS.find(p => p.id === item.id);
-        if (product && product.variants) {
-            const variant = product.variants.find(v => v.sku === item.sku);
-            if (variant) {
-                variant.stock -= item.quantity;
-            }
-        }
-    }
-    // Lưu danh sách sản phẩm đã cập nhật tồn kho vào LocalStorage
-    saveStoredProducts(PRODUCTS);
-
-    // 3. TẠO ĐƠN HÀNG MỚI LƯU THÔNG TIN PHIÊN BẢN CHI TIẾT
-    const currentUser = typeof getCurrentUser === 'function' ? getCurrentUser() : null;
-    const orderId = "DH" + Math.floor(100 + Math.random() * 900);
-    const orderTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-
-    const productSummaryText = cart.map(item => `${item.name} (${item.color} - ${item.storage}) x ${item.quantity}`).join(', ');
-
-    const newOrder = {
-        id: orderId,
-        userId: currentUser ? Number(currentUser.id) : null,
-        customer: currentUser ? (currentUser.fullName || currentUser.username) : "Khách vãng lai",
-        phone: currentUser ? (currentUser.phone || "0988123456") : "0988123456",
-        productSummary: productSummaryText,
-        total: orderTotal,
-        date: new Date().toLocaleDateString('vi-VN'),
-        status: "pending",
-        statusText: "Chờ xác nhận",
-        items: cart.map(item => ({
-            name: item.name,
-            color: item.color,
-            storage: item.storage,
-            sku: item.sku,
-            price: item.price,
-            quantity: item.quantity
-        }))
-    };
-
-    const orders = getStoredOrders();
-    orders.unshift(newOrder);
-    saveStoredOrders(orders);
-
-    // 4. LÀM TRỐNG GIỎ HÀNG
-    saveCart([]);
-
-    // 5. ĐÓNG MODAL GIỎ HÀNG NẾU ĐANG MỞ
+    // Đóng Modal giỏ hàng nếu đang mở
     const modalEl = document.getElementById('cartModal');
     if (modalEl && window.bootstrap) {
         const modal = bootstrap.Modal.getInstance(modalEl);
         if (modal) modal.hide();
     }
 
-    // 6. THÔNG BÁO THÀNH CÔNG VÀ CẬP NHẬT TRANG CHỦ & ADMIN
-    alert(`🎉 ĐẶT HÀNG THÀNH CÔNG!\n----------------------------------------\nMã đơn hàng: #${newOrder.id}\nTổng giá trị: ${formatCurrency(orderTotal)}\nSản phẩm: ${productSummaryText}\n\nTồn kho của các phiên bản vừa đặt đã được hệ thống tự động cập nhật!`);
-    showToast(`Đơn hàng #${newOrder.id} đặt thành công!`, 'success');
+    // Chuyển hướng sang trang thanh toán
+    window.location.href = 'index.php?action=checkout';
+}
 
-    // Cập nhật lại giao diện trang chủ nếu đang mở
-    renderHomePageProducts();
-
-    // Cập nhật giao diện Admin nếu đang ở trang Admin
-    if (typeof renderAdminProductTable === 'function') renderAdminProductTable();
-    if (typeof renderAdminOrdersData === 'function') renderAdminOrdersData();
+// Giữ lại hàm handleCheckoutDemo để tương thích ngược
+function handleCheckoutDemo() {
+    goToCheckout();
 }
 
 // =============================================================
@@ -1879,14 +1815,25 @@ document.addEventListener('DOMContentLoaded', () => {
     // 3. Cập nhật giao diện giỏ hàng
     updateCartUI();
 
-    // 4. Render sản phẩm trang chủ
+    // 4. Khởi tạo các trang thanh toán theo URL
+    if (window.location.search.includes('action=checkout-confirm')) {
+        if (typeof initCheckoutConfirmPage === 'function') {
+            initCheckoutConfirmPage();
+        }
+    } else if (window.location.search.includes('action=checkout')) {
+        if (typeof initCheckoutShippingPage === 'function') {
+            initCheckoutShippingPage();
+        }
+    }
+
+    // 5. Render sản phẩm trang chủ
     renderHomePageProducts();
 
-    // 5. Lắng nghe form tìm kiếm
+    // 6. Lắng nghe form tìm kiếm
     const searchForm = document.getElementById('searchForm');
     if (searchForm) {
         searchForm.addEventListener('submit', handleSearch);
     }
 
-    // 6. Form đăng nhập / đăng ký được xử lý server-side (AuthController + MySQL)
+    // 7. Form đăng nhập / đăng ký được xử lý server-side (AuthController + MySQL)
 });

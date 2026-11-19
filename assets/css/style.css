@@ -1601,4 +1601,137 @@ a:hover {
     background: #ffffff;
 }
 
+/* ============================================================= */
+/* GIAO DIỆN TRANG THANH TOÁN (CHECKOUT PAGE STYLES)             */
+/* ============================================================= */
+.checkout-page-container {
+    max-width: 1200px;
+}
+
+/* Thanh tiến trình 3 bước (Steps Indicator) */
+.checkout-steps-wrapper {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    background-color: #ffffff;
+    padding: 12px 28px;
+    border-radius: 50px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+}
+
+.checkout-step {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #94a3b8;
+    font-weight: 600;
+    font-size: 0.88rem;
+    transition: all 0.25s ease;
+}
+
+.checkout-step .step-circle {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background-color: #f1f5f9;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    font-weight: 700;
+    transition: all 0.25s ease;
+}
+
+.checkout-step.completed {
+    color: #10b981;
+}
+
+.checkout-step.completed .step-circle {
+    background-color: #d1fae5;
+    color: #10b981;
+}
+
+.checkout-step.active {
+    color: #2563eb;
+}
+
+.checkout-step.active .step-circle {
+    background-color: #2563eb;
+    color: #ffffff;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+}
+
+.step-line {
+    width: 48px;
+    height: 2px;
+    background-color: #e2e8f0;
+    transition: all 0.25s ease;
+}
+
+.step-line.active {
+    background-color: #10b981;
+}
+
+.checkout-items-scroll::-webkit-scrollbar {
+    width: 5px;
+}
+
+.checkout-items-scroll::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 4px;
+}
+
+.checkout-items-scroll::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+
+@media (max-width: 576px) {
+    .checkout-steps-wrapper {
+        padding: 8px 14px;
+        gap: 6px;
+        width: 100%;
+        justify-content: space-between;
+    }
+    .checkout-step .step-label {
+        font-size: 0.75rem;
+    }
+    .step-line {
+        width: 16px;
+    }
+}
+
+/* Card riêng biệt cho 2 phần Checkout */
+.checkout-customer-card,
+.checkout-summary-card {
+    background-color: #ffffff;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 20px rgba(15, 23, 42, 0.05) !important;
+    transition: box-shadow 0.25s ease;
+}
+
+.checkout-customer-card:hover,
+.checkout-summary-card:hover {
+    box-shadow: 0 6px 24px rgba(15, 23, 42, 0.08) !important;
+}
+
+.checkout-customer-card .input-group-text {
+    border-color: #cbd5e1;
+}
+
+.checkout-customer-card .form-control,
+.checkout-customer-card .form-select {
+    border-color: #cbd5e1;
+}
+
+.checkout-customer-card .form-control:focus,
+.checkout-customer-card .form-select:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+
 
