@@ -1151,30 +1151,71 @@ function escapeOrderHtml(value) {
     })[char]);
 }
 
+let activeOrderHistoryFilter = 'all';
+
+function filterOrderHistory(status) {
+    activeOrderHistoryFilter = status;
+    renderOrderHistory();
+}
+
+function cancelCustomerOrder(orderId) {
+    const user = getCurrentUser();
+    if (!user || user.role === 'admin') return;
+    const orders = getStoredOrders();
+    const order = orders.find(item => String(item.id) === String(orderId) && Number(item.userId) === Number(user.id));
+    if (!order || order.status !== 'pending') return;
+    if (!window.confirm(`Bạn có chắc muốn hủy đơn hàng #${order.id}?`)) return;
+    order.status = 'cancelled';
+    order.statusText = 'Đã hủy';
+    saveStoredOrders(orders);
+    renderOrderHistory();
+}
+
 function renderOrderHistory() {
     const container = document.getElementById('orderHistoryContent');
     if (!container) return;
 
     const orders = getCurrentUserOrders();
+    const filteredOrders = activeOrderHistoryFilter === 'all' ? orders : orders.filter(order => order.status === activeOrderHistoryFilter);
+    const filters = `
+        <div class="d-flex flex-wrap gap-2 mb-3" role="group" aria-label="Lọc đơn hàng theo trạng thái">
+            <button type="button" class="btn btn-sm ${activeOrderHistoryFilter === 'all' ? 'btn-primary' : 'btn-outline-primary'}" onclick="filterOrderHistory('all')">Tất cả</button>
+            <button type="button" class="btn btn-sm ${activeOrderHistoryFilter === 'pending' ? 'btn-warning' : 'btn-outline-warning'}" onclick="filterOrderHistory('pending')">Chờ xác nhận</button>
+            <button type="button" class="btn btn-sm ${activeOrderHistoryFilter === 'shipping' ? 'btn-primary' : 'btn-outline-primary'}" onclick="filterOrderHistory('shipping')">Đang vận chuyển</button>
+            <button type="button" class="btn btn-sm ${activeOrderHistoryFilter === 'completed' ? 'btn-success' : 'btn-outline-success'}" onclick="filterOrderHistory('completed')">Đã giao hàng</button>
+            <button type="button" class="btn btn-sm ${activeOrderHistoryFilter === 'cancelled' ? 'btn-secondary' : 'btn-outline-secondary'}" onclick="filterOrderHistory('cancelled')">Đã hủy</button>
+        </div>`;
     if (!orders.length) {
         container.innerHTML = '<div class="text-center text-muted py-5"><i class="fa-solid fa-box-open fa-3x mb-3 d-block"></i>Bạn chưa có đơn hàng nào.</div>';
         return;
     }
 
-    container.innerHTML = orders.map(order => {
+    if (!filteredOrders.length) {
+        container.innerHTML = filters + '<div class="text-center text-muted py-4">Không có đơn hàng ở trạng thái này.</div>';
+        return;
+    }
+
+    container.innerHTML = filters + filteredOrders.map(order => {
         const statusClass = order.status === 'completed' ? 'bg-success' : order.status === 'shipping' ? 'bg-primary' : order.status === 'cancelled' ? 'bg-secondary' : 'bg-warning text-dark';
-        const items = (order.items || []).map(item => `
-            <div class="d-flex justify-content-between gap-3 py-2 border-top small">
-                <span>${escapeOrderHtml(item.name)} <span class="text-muted">(${escapeOrderHtml(item.color)} · ${escapeOrderHtml(item.storage)}) × ${Number(item.quantity) || 0}</span></span>
+        const items = (order.items || []).map(item => {
+            const product = (typeof PRODUCTS !== 'undefined' ? PRODUCTS : []).find(p => p.name === item.name || (p.variants || []).some(variant => variant.sku === item.sku));
+            const variant = product && (product.variants || []).find(candidate => candidate.sku === item.sku);
+            const image = item.image || (variant && variant.image) || (product && product.image) || '';
+            return `
+            <div class="d-flex justify-content-between align-items-center gap-3 py-2 border-top small">
+                <span class="d-flex align-items-center gap-2"><img src="${escapeOrderHtml(image)}" alt="${escapeOrderHtml(item.name)}" class="rounded border" style="width:48px;height:48px;object-fit:cover" onerror="this.style.display='none'"><span>${escapeOrderHtml(item.name)} <span class="text-muted">(${escapeOrderHtml(item.color)} · ${escapeOrderHtml(item.storage)}) × ${Number(item.quantity) || 0}</span></span></span>
                 <span class="text-nowrap fw-semibold">${formatCurrency((Number(item.price) || 0) * (Number(item.quantity) || 0))}</span>
-            </div>`).join('');
+            </div>`;
+        }).join('');
         return `<article class="border rounded-3 p-3 mb-3">
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
                 <div><strong class="text-primary">#${escapeOrderHtml(order.id)}</strong><span class="text-muted ms-3 small">${escapeOrderHtml(order.date)}</span></div>
                 <span class="badge ${statusClass}">${escapeOrderHtml(order.statusText || 'Chờ xác nhận')}</span>
             </div>
             ${items || `<div class="small text-muted py-2">${escapeOrderHtml(order.productSummary)}</div>`}
+            <div class="small text-muted border-top pt-2 mt-1"><div><strong>Thanh toán:</strong> ${escapeOrderHtml(order.paymentMethod || 'COD (Thanh toán khi nhận hàng)')}</div><div class="mt-1"><strong>Địa chỉ nhận hàng:</strong> ${escapeOrderHtml(order.address || 'Chưa cập nhật')}</div>${order.note ? `<div class="mt-1"><strong>Ghi chú:</strong> ${escapeOrderHtml(order.note)}</div>` : ''}</div>
             <div class="d-flex justify-content-between border-top pt-2 mt-1 fw-bold"><span>Tổng thanh toán</span><span class="text-danger">${formatCurrency(Number(order.total) || 0)}</span></div>
+            ${order.status === 'pending' ? `<div class="text-end mt-3"><button type="button" class="btn btn-outline-danger btn-sm" onclick="cancelCustomerOrder('${escapeOrderHtml(order.id)}')"><i class="fa-solid fa-xmark me-1"></i>Hủy đơn</button></div>` : ''}
         </article>`;
     }).join('');
 }
