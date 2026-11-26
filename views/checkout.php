@@ -141,6 +141,15 @@
 
                 <!-- 7. Địa chỉ cụ thể -->
                 <div class="col-12">
+                    <label class="form-label fw-semibold small d-block">Hình thức nhận hàng</label>
+                    <div class="d-flex flex-wrap gap-3">
+                        <div class="form-check"><input class="form-check-input" type="radio" name="fulfillmentMethod" id="fulfillmentDelivery" value="delivery" checked onchange="updateFulfillmentFields()"><label class="form-check-label" for="fulfillmentDelivery">Giao tận nơi</label></div>
+                        <div class="form-check"><input class="form-check-input" type="radio" name="fulfillmentMethod" id="fulfillmentPickup" value="pickup" onchange="updateFulfillmentFields()"><label class="form-check-label" for="fulfillmentPickup">Nhận tại cửa hàng</label></div>
+                    </div>
+                </div>
+
+                <!-- 7. Địa chỉ cụ thể -->
+                <div class="col-12">
                     <label for="checkoutAddress" class="form-label fw-semibold small">
                         Địa chỉ nhận hàng chi tiết <span class="text-danger">*</span>
                     </label>
@@ -190,7 +199,7 @@ function initCheckoutShippingPage() {
     const shippingContainer = document.getElementById('checkoutShippingContainer');
 
     // 1. Kiểm tra giỏ hàng: nếu trống thì hiển thị thông báo giỏ hàng trống
-    if (!cart || cart.length === 0) {
+    if (!cart || !cart.some(item => item.selected !== false)) {
         if (emptySection) emptySection.style.display = 'block';
         if (shippingContainer) shippingContainer.style.display = 'none';
         return;
@@ -226,8 +235,13 @@ function initCheckoutShippingPage() {
         if (wardInput && savedShipping.ward) wardInput.value = savedShipping.ward;
         if (addressInput && savedShipping.address) addressInput.value = savedShipping.address;
         if (noteInput && savedShipping.note) noteInput.value = savedShipping.note;
+        const methodInput = document.querySelector(`input[name="fulfillmentMethod"][value="${savedShipping.fulfillmentMethod || 'delivery'}"]`);
+        if (methodInput) methodInput.checked = true;
+        updateFulfillmentFields();
         return;
     }
+
+    updateFulfillmentFields();
 
     // 3. Nếu chưa có dữ liệu lưu tạm, tự động điền thông tin từ tài khoản đã đăng nhập
     const currentUser = typeof getCurrentUser === 'function' ? getCurrentUser() : null;
@@ -238,11 +252,25 @@ function initCheckoutShippingPage() {
     }
 }
 
+function updateFulfillmentFields() {
+    const pickup = document.getElementById('fulfillmentPickup')?.checked;
+    ['checkoutProvince', 'checkoutDistrict', 'checkoutWard', 'checkoutAddress'].forEach(id => {
+        const field = document.getElementById(id);
+        if (field) field.required = !pickup;
+    });
+    const addressField = document.getElementById('checkoutAddress');
+    if (addressField) addressField.closest('.col-12')?.classList.toggle('d-none', Boolean(pickup));
+    ['checkoutProvince', 'checkoutDistrict', 'checkoutWard'].forEach(id => {
+        const field = document.getElementById(id);
+        if (field) field.closest('.col-12')?.classList.toggle('d-none', Boolean(pickup));
+    });
+}
+
 // Kiểm tra dữ liệu và lưu tạm sang trang 2 (Xử lý đơn hàng)
 function goToOrderReviewPage() {
     const cart = typeof getCart === 'function' ? getCart() : [];
-    if (!cart || cart.length === 0) {
-        showToast('Giỏ hàng của bạn đang trống! Vui lòng chọn sản phẩm.', 'warning');
+    if (!cart || !cart.some(item => item.selected !== false)) {
+        showToast('Vui lòng chọn ít nhất một sản phẩm để thanh toán.', 'warning');
         initCheckoutShippingPage();
         return;
     }
@@ -268,6 +296,7 @@ function goToOrderReviewPage() {
     const ward = wardInput.value.trim();
     const address = addressInput.value.trim();
     const note = noteInput ? noteInput.value.trim() : '';
+    const fulfillmentMethod = document.querySelector('input[name="fulfillmentMethod"]:checked')?.value || 'delivery';
 
     // Xóa các trạng thái lỗi cũ
     [nameInput, phoneInput, emailInput, provinceSelect, districtInput, wardInput, addressInput].forEach(el => {
@@ -302,28 +331,28 @@ function goToOrderReviewPage() {
     }
 
     // 4. Kiểm tra Tỉnh / Thành phố
-    if (!province) {
+    if (fulfillmentMethod === 'delivery' && !province) {
         provinceSelect.classList.add('is-invalid');
         if (!hasError) provinceSelect.focus();
         hasError = true;
     }
 
     // 5. Kiểm tra Quận / Huyện
-    if (!district) {
+    if (fulfillmentMethod === 'delivery' && !district) {
         districtInput.classList.add('is-invalid');
         if (!hasError) districtInput.focus();
         hasError = true;
     }
 
     // 6. Kiểm tra Phường / Xã
-    if (!ward) {
+    if (fulfillmentMethod === 'delivery' && !ward) {
         wardInput.classList.add('is-invalid');
         if (!hasError) wardInput.focus();
         hasError = true;
     }
 
     // 7. Kiểm tra Địa chỉ chi tiết
-    if (!address) {
+    if (fulfillmentMethod === 'delivery' && !address) {
         addressInput.classList.add('is-invalid');
         if (!hasError) addressInput.focus();
         hasError = true;
@@ -342,8 +371,9 @@ function goToOrderReviewPage() {
         province: province,
         district: district,
         ward: ward,
-        address: address,
-        fullAddress: `${address}, ${ward}, ${district}, ${province}`,
+        address: fulfillmentMethod === 'pickup' ? 'Nhận tại cửa hàng' : address,
+        fullAddress: fulfillmentMethod === 'pickup' ? 'Nhận tại cửa hàng' : `${address}, ${ward}, ${district}, ${province}`,
+        fulfillmentMethod,
         note: note
     };
 

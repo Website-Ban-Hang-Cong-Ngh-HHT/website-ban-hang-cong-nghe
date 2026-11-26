@@ -228,7 +228,7 @@ let currentShippingData = null;
 
 // Khởi tạo trang 2: Kiểm tra dữ liệu và hiển thị thông tin
 function initCheckoutConfirmPage() {
-    const cart = typeof getCart === 'function' ? getCart() : [];
+    const cart = typeof getCart === 'function' ? getCart().filter(item => item.selected !== false) : [];
     
     // 1. Kiểm tra giỏ hàng: nếu không có sản phẩm, yêu cầu mua sắm trước
     if (!cart || cart.length === 0) {
@@ -247,7 +247,7 @@ function initCheckoutConfirmPage() {
     }
 
     // Nếu chưa có thông tin nhận hàng, quay lại Trang 1 để nhập
-    if (!shippingData || !shippingData.fullName || !shippingData.phone || !shippingData.address) {
+    if (!shippingData || !shippingData.fullName || !shippingData.phone || (shippingData.fulfillmentMethod !== 'pickup' && !shippingData.address)) {
         showToast('Vui lòng hoàn tất thông tin nhận hàng trước khi xác nhận!', 'warning');
         window.location.href = 'index.php?action=checkout';
         return;
@@ -327,10 +327,11 @@ function renderConfirmOrderItems(cart) {
 }
 
 // Xử lý khi nhấn "XÁC NHẬN ĐẶT HÀNG"
-function processConfirmOrder() {
-    const cart = typeof getCart === 'function' ? getCart() : [];
-    if (!cart || cart.length === 0) {
-        showToast('Giỏ hàng trống! Không thể đặt hàng.', 'warning');
+async function processConfirmOrder() {
+    const fullCart = typeof getCart === 'function' ? getCart() : [];
+    const cart = fullCart.filter(item => item.selected !== false);
+    if (!cart.length) {
+        showToast('Vui lòng chọn ít nhất một sản phẩm để đặt hàng.', 'warning');
         window.location.href = 'index.php';
         return;
     }
@@ -350,25 +351,25 @@ function processConfirmOrder() {
         confirmBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i> Đang tạo đơn hàng...';
     }
 
-    // 2. Kiểm tra và trừ số lượng tồn kho của từng biến thể sản phẩm trong PRODUCTS
+    // 2. Kiểm tra tồn kho trước khi gửi đơn lên máy chủ.
     if (typeof PRODUCTS !== 'undefined' && Array.isArray(PRODUCTS)) {
         for (const item of cart) {
             const product = PRODUCTS.find(p => p.id === item.id);
             if (product && product.variants) {
                 const variant = product.variants.find(v => v.sku === item.sku);
-                if (variant && variant.stock >= item.quantity) {
-                    variant.stock -= item.quantity;
+                if (!variant || Number(variant.stock) < Number(item.quantity)) {
+                    if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.innerHTML = '<i class="fa-solid fa-shield-check me-2"></i> XÁC NHẬN ĐẶT HÀNG'; }
+                    showToast(`Sản phẩm ${item.name} chỉ còn ${variant ? variant.stock : 0} sản phẩm trong kho.`, 'error');
+                    return;
                 }
+                item.maxStock = Number(variant.stock);
             }
-        }
-        if (typeof saveStoredProducts === 'function') {
-            saveStoredProducts(PRODUCTS);
         }
     }
 
     // 3. Tính tổng tiền và tạo đối tượng đơn hàng mới
     const totalAmount = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    const orderId = "DH" + Math.floor(1000 + Math.random() * 9000);
+    let orderId = "DH" + Math.floor(1000 + Math.random() * 9000);
     const productSummary = cart.map(i => `${i.name} (${i.color || ''} ${i.storage || ''}) x ${i.quantity}`).join(', ');
     const currentUser = typeof getCurrentUser === 'function' ? getCurrentUser() : null;
 
@@ -380,6 +381,8 @@ function processConfirmOrder() {
         email: currentShippingData.email,
         address: currentShippingData.fullAddress || currentShippingData.address,
         note: currentShippingData.note || '',
+        fulfillmentMethod: currentShippingData.fulfillmentMethod || 'delivery',
+        fulfillmentMethodText: currentShippingData.fulfillmentMethod === 'pickup' ? 'Nhận tại cửa hàng' : 'Giao tận nơi',
         paymentMethod: "COD (Thanh toán khi nhận hàng)",
         total: totalAmount,
         shippingFee: 0,
@@ -401,7 +404,34 @@ function processConfirmOrder() {
         }))
     };
 
-    // 4. Lưu đơn hàng vào danh sách orders (LocalStorage đồng bộ cả techstore_orders_v2 và techstore_orders)
+    try {
+        const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
+        const response = await fetch('index.php?action=place-order', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ _csrf: csrf, customer: currentShippingData, fulfillmentMethod: newOrder.fulfillmentMethod, items: cart })
+        });
+        const result = await response.json();
+        if (!response.ok || !result.success) throw new Error(result.message || 'Không thể tạo đơn hàng.');
+        orderId = result.orderId;
+        newOrder.id = orderId;
+        newOrder.total = Number(result.total);
+    } catch (error) {
+        if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.innerHTML = '<i class="fa-solid fa-shield-check me-2"></i> XÁC NHẬN ĐẶT HÀNG'; }
+        showToast(error.message || 'Không thể gửi đơn hàng lên máy chủ.', 'error');
+        return;
+    }
+
+    // Giảm tồn kho bản demo sau khi máy chủ chấp nhận đơn.
+    if (typeof PRODUCTS !== 'undefined' && Array.isArray(PRODUCTS)) {
+        for (const item of cart) {
+            const variant = PRODUCTS.find(p => p.id === item.id)?.variants?.find(v => v.sku === item.sku);
+            if (variant) variant.stock -= item.quantity;
+        }
+        if (typeof saveStoredProducts === 'function') saveStoredProducts(PRODUCTS);
+    }
+
+    // Lưu lịch sử đơn hàng trong trình duyệt cho giao diện hiện tại.
     const orders = typeof getStoredOrders === 'function' ? getStoredOrders() : [];
     orders.unshift(newOrder);
     if (typeof saveStoredOrders === 'function') {
@@ -411,9 +441,9 @@ function processConfirmOrder() {
         localStorage.setItem('techstore_orders', JSON.stringify(orders));
     }
 
-    // 5. Xóa giỏ hàng và dữ liệu nhận hàng tạm thời sau khi đặt hàng thành công
+    // Xóa các sản phẩm đã đặt; giữ lại những sản phẩm chưa được chọn.
     if (typeof saveCart === 'function') {
-        saveCart([]);
+        saveCart(fullCart.filter(item => item.selected === false));
     } else {
         localStorage.setItem('techstore_cart_v2', JSON.stringify([]));
         localStorage.setItem('techstore_cart', JSON.stringify([]));

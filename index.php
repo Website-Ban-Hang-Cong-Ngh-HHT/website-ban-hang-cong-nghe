@@ -26,4 +26,8 @@ spl_autoload_register(function ($class) {
 });
 
 // Điều hướng trang web
+if (($_GET['action'] ?? '') === 'place-order') {
+    (new OrderController)->placeOrder();
+    exit;
+}
 require_once './routes/index.php';
