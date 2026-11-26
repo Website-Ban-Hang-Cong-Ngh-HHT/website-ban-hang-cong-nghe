@@ -1952,5 +1952,34 @@ a:hover {
     border-bottom: none;
 }
 
+/* Thẻ tùy chọn phương thức vận chuyển Shopee (Giao thường & Giao hỏa tốc) */
+.shopee-shipping-card {
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    padding: 12px 14px;
+    background-color: #ffffff;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+}
+
+.shopee-shipping-card:hover {
+    border-color: #ee4d2d;
+}
+
+.shopee-shipping-card.active {
+    border-color: #ee4d2d;
+    background-color: #fff9f8;
+    box-shadow: 0 0 0 1px #ee4d2d;
+}
+
+.shopee-shipping-card.disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background-color: #f8fafc;
+    border-color: #e2e8f0;
+}
+
+
 
 

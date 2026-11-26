@@ -10,5 +10,6 @@ match ($action) {
     'admin'             => (new HomeController)->admin(),
     'checkout'          => (new HomeController)->checkout(),
     'checkout-confirm'  => (new HomeController)->checkoutConfirm(),
+    'order-tracking'    => (new HomeController)->orderTracking(),
     default             => (new HomeController)->index(),
 };

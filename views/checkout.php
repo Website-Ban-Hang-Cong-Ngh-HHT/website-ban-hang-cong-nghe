@@ -1,3 +1,15 @@
+<?php
+// KIỂM TRA BẢO MẬT: Bắt buộc đăng nhập tài khoản mới được truy cập trang thanh toán
+// Lưu ý: Kiểm tra đăng nhập và cấu hình Header đã được xử lý tại HomeController::checkout()
+if (!is_logged_in()) {
+    if (!headers_sent()) {
+        header('Location: index.php?action=login&redirect=' . urlencode('index.php?action=checkout'));
+        exit;
+    }
+    echo '<script>window.location.href = "index.php?action=login&redirect=' . urlencode('index.php?action=checkout') . '";</script>';
+    exit;
+}
+?>
 <!-- ================================================================= -->
 <!-- TRANG THANH TOÁN GIAO DIỆN SHOPEE (views/checkout.php)             -->
 <!-- CODE DÀNH CHO SINH VIÊN MỚI HỌC FRONT-END: HTML, CSS, JS CƠ BẢN    -->
@@ -54,15 +66,21 @@
                     <div class="col-6 text-dark text-end" id="thanhCongPhuongThuc">Thanh toán khi nhận hàng (COD)</div>
 
                     <div class="col-6 text-muted">Phương thức vận chuyển:</div>
-                    <div class="col-6 text-success fw-bold text-end" id="thanhCongVanChuyen">Nhanh</div>
+                    <div class="col-6 text-success fw-bold text-end" id="thanhCongVanChuyen">Giao thường</div>
+
+                    <div class="col-6 text-muted">Dự kiến giao hàng:</div>
+                    <div class="col-6 text-primary fw-bold text-end" id="thanhCongThoiGianGiao">---</div>
 
                     <div class="col-6 text-muted">Tổng thanh toán:</div>
                     <div class="col-6 h5 fw-bold text-shopee text-end mb-0" id="thanhCongTongTien">0 ₫</div>
                 </div>
             </div>
 
-            <div class="d-flex justify-content-center gap-3">
-                <a href="index.php" class="btn btn-shopee px-4 py-2">
+            <div class="d-flex justify-content-center gap-3 flex-wrap">
+                <a id="btnTheoDoiDonHangMoi" href="index.php?action=order-tracking" class="btn btn-warning px-4 py-2 fw-bold text-dark">
+                    <i class="fa-solid fa-truck-fast me-2"></i> Theo dõi giao hàng ngay
+                </a>
+                <a href="index.php" class="btn btn-outline-secondary px-4 py-2">
                     <i class="fa-solid fa-store me-2"></i> Tiếp tục mua sắm
                 </a>
             </div>
@@ -135,30 +153,67 @@
                     <!-- JavaScript render các dòng sản phẩm vào đây -->
                 </div>
 
-                <!-- Lời nhắn cho người bán & Đơn vị vận chuyển -->
+                <!-- Lời nhắn cho người bán & Phương thức vận chuyển (Giao thường & Giao hỏa tốc) -->
                 <div class="p-3 bg-light border-top">
-                    <div class="row g-3 align-items-center">
+                    <div class="row g-3">
                         <!-- Cột Lời nhắn cho Người bán -->
-                        <div class="col-12 col-md-5">
-                            <div class="d-flex align-items-center gap-2">
-                                <label for="inputLoiNhan" class="small text-muted text-nowrap mb-0">Lời nhắn:</label>
-                                <input type="text" id="inputLoiNhan" class="form-control form-control-sm bg-white" placeholder="Lưu ý cho Người bán (ví dụ: giao giờ hành chính)...">
-                            </div>
+                        <div class="col-12 col-lg-4">
+                            <label for="inputLoiNhan" class="small text-muted fw-semibold mb-1">Lời nhắn cho người bán:</label>
+                            <textarea id="inputLoiNhan" class="form-control form-control-sm bg-white" rows="3" placeholder="Lưu ý cho Người bán (ví dụ: giao giờ hành chính, gọi trước khi giao)..."></textarea>
                         </div>
 
-                        <!-- Cột Đơn vị vận chuyển -->
-                        <div class="col-12 col-md-7 border-start-md">
-                            <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2">
-                                <div class="d-flex align-items-center gap-2">
-                                    <span class="small text-success fw-bold text-nowrap">Đơn vị vận chuyển:</span>
-                                    <select id="selectVanChuyen" class="form-select form-select-sm w-auto" onchange="thayDoiVanChuyen()">
-                                        <option value="nhanh" selected>Nhanh (2-3 ngày) - 30.000 ₫</option>
-                                        <option value="hoatoc">Hỏa Tốc (2 giờ) - 50.000 ₫</option>
-                                        <option value="tietkiem">Tiết Kiệm (4-5 ngày) - 15.000 ₫</option>
-                                    </select>
+                        <!-- Cột Chọn phương thức vận chuyển (2 hình thức: Giao thường và Giao hỏa tốc) -->
+                        <div class="col-12 col-lg-8 border-start-lg">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="small text-dark fw-bold">
+                                    <i class="fa-solid fa-truck-fast text-shopee me-1"></i> Phương thức vận chuyển:
+                                </span>
+                                <span class="fw-bold text-shopee" id="hienThiTienShip">30.000 ₫</span>
+                            </div>
+
+                            <div class="row g-2">
+                                <!-- Lựa chọn 1: Giao thường -->
+                                <div class="col-12 col-sm-6">
+                                    <div class="shopee-shipping-card active" id="cardGiaoThuong" onclick="chonPhuongThucVanChuyen('standard')">
+                                        <div class="form-check p-0 m-0 d-flex align-items-start gap-2">
+                                            <input class="form-check-input mt-1" type="radio" name="radioVanChuyen" id="radioGiaoThuong" value="standard" checked>
+                                            <div class="flex-grow-1">
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <label class="form-check-label fw-bold text-dark small" for="radioGiaoThuong" style="cursor: pointer;">
+                                                        <i class="fa-solid fa-truck text-primary me-1"></i> Giao thường
+                                                    </label>
+                                                    <span class="text-shopee fw-bold small">30.000 ₫</span>
+                                                </div>
+                                                <div class="small text-muted mt-1" id="thoiGianGiaoThuongText" style="font-size: 12px;">
+                                                    Đang tính toán thời gian giao...
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="fw-bold text-shopee text-nowrap" id="hienThiTienShip">
-                                    30.000 ₫
+
+                                <!-- Lựa chọn 2: Giao hỏa tốc -->
+                                <div class="col-12 col-sm-6">
+                                    <div class="shopee-shipping-card" id="cardGiaoHoaToc" onclick="chonPhuongThucVanChuyen('express')">
+                                        <div class="form-check p-0 m-0 d-flex align-items-start gap-2">
+                                            <input class="form-check-input mt-1" type="radio" name="radioVanChuyen" id="radioGiaoHoaToc" value="express">
+                                            <div class="flex-grow-1">
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <label class="form-check-label fw-bold text-dark small" for="radioGiaoHoaToc" style="cursor: pointer;">
+                                                        <i class="fa-solid fa-bolt text-warning me-1"></i> Giao hỏa tốc (2 giờ)
+                                                    </label>
+                                                    <span class="text-shopee fw-bold small">50.000 ₫</span>
+                                                </div>
+                                                <div class="small text-muted mt-1" id="thoiGianGiaoHoaTocText" style="font-size: 12px;">
+                                                    Đang tính toán thời gian giao...
+                                                </div>
+                                                <!-- Cảnh báo khi quá 08:00 sáng -->
+                                                <div class="small text-danger mt-1 fw-semibold" id="canhBaoHoaToc" style="display: none; font-size: 11px;">
+                                                    <i class="fa-solid fa-circle-exclamation me-1"></i> Giao hỏa tốc chỉ áp dụng cho đơn hàng đặt trước 08:00 sáng. Vui lòng chọn giao thường.
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -438,7 +493,10 @@ var idDiaChiDangChon = null;
 // Biến lưu phương thức thanh toán đang chọn: "COD" hoặc "BANK"
 var phuongThucThanhToanHienTai = "COD";
 
-// Biến lưu thông tin phí vận chuyển hiện tại (mặc định 30.000₫)
+// Biến lưu phương thức vận chuyển đang chọn: "standard" (Giao thường) hoặc "express" (Giao hỏa tốc)
+var phuongThucVanChuyenHienTai = "standard";
+
+// Biến lưu thông tin phí vận chuyển hiện tại (mặc định 30.000₫ cho Giao thường)
 var phiVanChuyenHienTai = 30000;
 
 // Biến lưu thông tin voucher hiện tại
@@ -452,6 +510,16 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 
 function khoiTaoTrangThanhToan() {
+    // 0. BẮT BUỘC ĐĂNG NHẬP: Kiểm tra trạng thái đăng nhập
+    if (typeof kiemTraDangNhap === "function" && !kiemTraDangNhap()) {
+        if (typeof chuyenDenTrangDangNhap === "function") {
+            chuyenDenTrangDangNhap("Vui lòng đăng nhập để sử dụng chức năng thanh toán!", "index.php?action=checkout");
+        } else {
+            window.location.href = "index.php?action=login&redirect=" + encodeURIComponent("index.php?action=checkout") + "&msg=" + encodeURIComponent("Vui lòng đăng nhập để thanh toán!");
+        }
+        return;
+    }
+
     // 1. Kiểm tra giỏ hàng có sản phẩm hay không
     var cart = layGioHang();
     var khungGioHangTrong = document.getElementById("khungGioHangTrong");
@@ -492,7 +560,11 @@ function khoiTaoTrangThanhToan() {
     // 3. Hiển thị danh sách sản phẩm từ giỏ hàng
     hienThiDanhSachSanPham(cart);
 
-    // 4. Tính toán tổng tiền
+    // 4. Khởi tạo phương thức vận chuyển (Giao thường & Giao hỏa tốc)
+    khoiTaoThongTinVanChuyen();
+    chonPhuongThucVanChuyen("standard");
+
+    // 5. Tính toán tổng tiền
     tinhTongTien();
 }
 
@@ -523,20 +595,41 @@ function dinhDangTien(soTien) {
 // 4. CÁC HÀM QUẢN LÝ ĐỊA CHỈ NHẬN HÀNG (MẢNG VÀ ĐỐI TƯỢNG)
 // ===================================================================
 
+// Tên khóa lưu trong localStorage riêng cho từng người dùng (Bảo vệ dữ liệu tài khoản)
+function layKhoaLuuDiaChi() {
+    var user = (typeof getCurrentUser === "function") ? getCurrentUser() : null;
+    return user ? ("shopee_danh_sach_dia_chi_u" + user.id) : "shopee_danh_sach_dia_chi_guest";
+}
+
 // Lấy danh sách địa chỉ từ localStorage
 function layDanhSachDiaChi() {
-    var duLieuLuu = localStorage.getItem(KHOA_LUU_DIA_CHI);
+    var key = layKhoaLuuDiaChi();
+    var duLieuLuu = localStorage.getItem(key);
     if (duLieuLuu) {
         return JSON.parse(duLieuLuu);
     }
-    // Nếu chưa có, lưu mảng mẫu ban đầu vào localStorage và trả về
-    luuDanhSachDiaChi(danhSachDiaChiMacDinh);
-    return danhSachDiaChiMacDinh;
+    // Lấy thông tin user hiện tại nếu có để điền sẵn tên & SĐT người nhận
+    var user = (typeof getCurrentUser === "function") ? getCurrentUser() : null;
+    var danhSachKhoiTao = [
+        {
+            id: 1,
+            hoTen: user ? (user.fullName || user.username) : "Nguyễn Văn An",
+            soDienThoai: user ? (user.phone || "0988123456") : "0988123456",
+            tinhThanh: "Hà Nội",
+            quanHuyen: "Quận Cầu Giấy",
+            phuongXa: "Phường Dịch Vọng",
+            diaChiChiTiet: "Số 123 Đường Cầu Giấy",
+            laMacDinh: true
+        }
+    ];
+    luuDanhSachDiaChi(danhSachKhoiTao);
+    return danhSachKhoiTao;
 }
 
 // Lưu mảng danh sách địa chỉ vào localStorage
 function luuDanhSachDiaChi(danhSach) {
-    localStorage.setItem(KHOA_LUU_DIA_CHI, JSON.stringify(danhSach));
+    var key = layKhoaLuuDiaChi();
+    localStorage.setItem(key, JSON.stringify(danhSach));
 }
 
 // Lấy đối tượng địa chỉ đang được chọn
@@ -580,6 +673,10 @@ function hienThiDiaChiDangChon() {
 
 // Mở Modal Quản lý & Chọn địa chỉ
 function moModalChonDiaChi() {
+    if (typeof kiemTraDangNhap === "function" && !kiemTraDangNhap()) {
+        chuyenDenTrangDangNhap("Vui lòng đăng nhập để quản lý địa chỉ nhận hàng!", "index.php?action=checkout");
+        return;
+    }
     var modal = document.getElementById("modalChonDiaChi");
     if (modal) modal.style.display = "flex";
     hienThiDanhSachDiaChiTrongModal();
@@ -657,6 +754,10 @@ function xacNhanChonDiaChi() {
 
 // Thiết lập 1 địa chỉ làm mặc định
 function thietLapMacDinh(id) {
+    if (typeof kiemTraDangNhap === "function" && !kiemTraDangNhap()) {
+        chuyenDenTrangDangNhap("Vui lòng đăng nhập để thiết lập địa chỉ mặc định!", "index.php?action=checkout");
+        return;
+    }
     var danhSach = layDanhSachDiaChi();
     for (var i = 0; i < danhSach.length; i++) {
         if (danhSach[i].id == id) {
@@ -673,6 +774,10 @@ function thietLapMacDinh(id) {
 
 // Xóa một địa chỉ khỏi danh sách
 function xoaDiaChi(id) {
+    if (typeof kiemTraDangNhap === "function" && !kiemTraDangNhap()) {
+        chuyenDenTrangDangNhap("Vui lòng đăng nhập để xóa địa chỉ nhận hàng!", "index.php?action=checkout");
+        return;
+    }
     var danhSach = layDanhSachDiaChi();
     if (danhSach.length <= 1) {
         alert("Bạn cần giữ lại ít nhất 1 địa chỉ nhận hàng!");
@@ -705,6 +810,10 @@ function xoaDiaChi(id) {
 
 // Mở Form Thêm địa chỉ mới
 function moFormThemDiaChi() {
+    if (typeof kiemTraDangNhap === "function" && !kiemTraDangNhap()) {
+        chuyenDenTrangDangNhap("Vui lòng đăng nhập để thêm địa chỉ nhận hàng!", "index.php?action=checkout");
+        return;
+    }
     var modal = document.getElementById("modalFormDiaChi");
     var tieuDe = document.getElementById("tieuDeFormDiaChi");
     if (tieuDe) tieuDe.innerText = "Địa chỉ mới";
@@ -724,6 +833,10 @@ function moFormThemDiaChi() {
 
 // Mở Form Sửa địa chỉ đã có
 function moFormSuaDiaChi(id) {
+    if (typeof kiemTraDangNhap === "function" && !kiemTraDangNhap()) {
+        chuyenDenTrangDangNhap("Vui lòng đăng nhập để chỉnh sửa địa chỉ nhận hàng!", "index.php?action=checkout");
+        return;
+    }
     var danhSach = layDanhSachDiaChi();
     var diaChi = null;
     for (var i = 0; i < danhSach.length; i++) {
@@ -893,18 +1006,141 @@ function hienThiDanhSachSanPham(cart) {
 }
 
 // ===================================================================
-// 6. XỬ LÝ PHƯƠNG THỨC VẬN CHUYỂN
+// 6. XỬ LÝ PHƯƠNG THỨC VẬN CHUYỂN (GIAO THƯỜNG & GIAO HỎA TỐC)
 // ===================================================================
-function thayDoiVanChuyen() {
-    var selectEl = document.getElementById("selectVanChuyen");
-    var loaiVanChuyen = selectEl ? selectEl.value : "nhanh";
 
-    if (loaiVanChuyen === "hoatoc") {
-        phiVanChuyenHienTai = 50000;
-    } else if (loaiVanChuyen === "tietkiem") {
-        phiVanChuyenHienTai = 15000;
+// Hàm định dạng ngày sang dạng dd/mm/yyyy
+function dinhDangNgay(dateObj) {
+    var d = dateObj.getDate();
+    var m = dateObj.getMonth() + 1;
+    var y = dateObj.getFullYear();
+    return (d < 10 ? "0" + d : d) + "/" + (m < 10 ? "0" + m : m) + "/" + y;
+}
+
+// Hàm định dạng giờ sang dạng hh:mm
+function dinhDangGio(dateObj) {
+    var h = dateObj.getHours();
+    var m = dateObj.getMinutes();
+    return (h < 10 ? "0" + h : h) + ":" + (m < 10 ? "0" + m : m);
+}
+
+// Hàm tính toán thông tin vận chuyển theo thời gian hiện tại
+function tinhThongTinGiaoHang(ngayGioDat) {
+    var thoiGian = ngayGioDat || new Date();
+    var gio = thoiGian.getHours();
+
+    // 1. Giao thường: Phí 30.000 ₫
+    // - Đặt trước 18:00 -> Giao trong ngày hôm nay
+    // - Đặt từ 18:00 trở đi -> Giao vào ngày mai
+    var ngayGiaoThuong = "";
+    var gioGiaoThuong = "";
+    var moTaGiaoThuong = "";
+
+    if (gio < 18) {
+        ngayGiaoThuong = dinhDangNgay(thoiGian);
+        gioGiaoThuong = "Trong ngày (trước 18:00)";
+        moTaGiaoThuong = "Giao trong ngày (" + ngayGiaoThuong + ", trước 18:00)";
     } else {
-        phiVanChuyenHienTai = 30000;
+        var ngayMai = new Date(thoiGian.getTime() + 24 * 60 * 60 * 1000);
+        ngayGiaoThuong = dinhDangNgay(ngayMai);
+        gioGiaoThuong = "Trước 18:00 ngày mai";
+        moTaGiaoThuong = "Hết giờ giao trong ngày. Dự kiến giao: " + ngayGiaoThuong + " (trước 18:00)";
+    }
+
+    // 2. Giao hỏa tốc: Phí 50.000 ₫
+    // - Chỉ áp dụng nếu đặt TRƯỚC 08:00 sáng
+    // - Giao trong vòng 2 tiếng kể từ khi đặt
+    var duocGiaoHoaToc = (gio < 8);
+    var ngayGiaoHoaToc = "";
+    var gioGiaoHoaToc = "";
+    var moTaGiaoHoaToc = "";
+
+    if (duocGiaoHoaToc) {
+        ngayGiaoHoaToc = dinhDangNgay(thoiGian);
+        var thoiGianSau2h = new Date(thoiGian.getTime() + 2 * 60 * 60 * 1000);
+        gioGiaoHoaToc = "Trước " + dinhDangGio(thoiGianSau2h);
+        moTaGiaoHoaToc = "Giao trong vòng 2 tiếng (Dự kiến trước " + dinhDangGio(thoiGianSau2h) + " hôm nay)";
+    } else {
+        moTaGiaoHoaToc = "Giao hỏa tốc chỉ áp dụng cho đơn đặt trước 08:00 sáng. Vui lòng chọn giao thường.";
+    }
+
+    return {
+        duocGiaoHoaToc: duocGiaoHoaToc,
+        ngayGiaoThuong: ngayGiaoThuong,
+        gioGiaoThuong: gioGiaoThuong,
+        moTaGiaoThuong: moTaGiaoThuong,
+        ngayGiaoHoaToc: ngayGiaoHoaToc,
+        gioGiaoHoaToc: gioGiaoHoaToc,
+        moTaGiaoHoaToc: moTaGiaoHoaToc
+    };
+}
+
+// Khởi tạo hiển thị thông tin vận chuyển khi tải trang
+function khoiTaoThongTinVanChuyen() {
+    var info = tinhThongTinGiaoHang(new Date());
+
+    var textGiaoThuongEl = document.getElementById("thoiGianGiaoThuongText");
+    var textGiaoHoaTocEl = document.getElementById("thoiGianGiaoHoaTocText");
+    var canhBaoHoaTocEl = document.getElementById("canhBaoHoaToc");
+    var radioGiaoHoaTocEl = document.getElementById("radioGiaoHoaToc");
+    var cardGiaoHoaTocEl = document.getElementById("cardGiaoHoaToc");
+
+    if (textGiaoThuongEl) {
+        textGiaoThuongEl.innerText = info.moTaGiaoThuong;
+    }
+
+    if (info.duocGiaoHoaToc) {
+        if (textGiaoHoaTocEl) {
+            textGiaoHoaTocEl.innerText = info.moTaGiaoHoaToc;
+            textGiaoHoaTocEl.className = "small text-success mt-1 fw-semibold";
+        }
+        if (canhBaoHoaTocEl) canhBaoHoaTocEl.style.display = "none";
+        if (radioGiaoHoaTocEl) radioGiaoHoaTocEl.disabled = false;
+        if (cardGiaoHoaTocEl) cardGiaoHoaTocEl.classList.remove("disabled");
+    } else {
+        // Sau 08:00 sáng: Vô hiệu hóa tùy chọn hỏa tốc
+        if (textGiaoHoaTocEl) {
+            textGiaoHoaTocEl.innerText = "Không phục vụ hỏa tốc sau 08:00 sáng";
+            textGiaoHoaTocEl.className = "small text-muted mt-1";
+        }
+        if (canhBaoHoaTocEl) canhBaoHoaTocEl.style.display = "block";
+        if (radioGiaoHoaTocEl) radioGiaoHoaTocEl.disabled = true;
+        if (cardGiaoHoaTocEl) cardGiaoHoaTocEl.classList.add("disabled");
+
+        if (phuongThucVanChuyenHienTai === "express") {
+            chonPhuongThucVanChuyen("standard");
+        }
+    }
+}
+
+// Hàm chọn phương thức vận chuyển (standard hoặc express)
+function chonPhuongThucVanChuyen(loai) {
+    var info = tinhThongTinGiaoHang(new Date());
+
+    // Nếu chọn hỏa tốc mà đã quá 08:00 sáng
+    if (loai === "express" && !info.duocGiaoHoaToc) {
+        alert("Giao hỏa tốc chỉ áp dụng cho đơn hàng đặt trước 08:00 sáng! Quý khách vui lòng chọn phương thức Giao thường.");
+        loai = "standard";
+    }
+
+    phuongThucVanChuyenHienTai = loai;
+    phiVanChuyenHienTai = (loai === "express") ? 50000 : 30000;
+
+    var radioGiaoThuong = document.getElementById("radioGiaoThuong");
+    var radioGiaoHoaToc = document.getElementById("radioGiaoHoaToc");
+    var cardGiaoThuong = document.getElementById("cardGiaoThuong");
+    var cardGiaoHoaToc = document.getElementById("cardGiaoHoaToc");
+
+    if (loai === "express") {
+        if (radioGiaoHoaToc) radioGiaoHoaToc.checked = true;
+        if (radioGiaoThuong) radioGiaoThuong.checked = false;
+        if (cardGiaoHoaToc) cardGiaoHoaToc.classList.add("active");
+        if (cardGiaoThuong) cardGiaoThuong.classList.remove("active");
+    } else {
+        if (radioGiaoThuong) radioGiaoThuong.checked = true;
+        if (radioGiaoHoaToc) radioGiaoHoaToc.checked = false;
+        if (cardGiaoThuong) cardGiaoThuong.classList.add("active");
+        if (cardGiaoHoaToc) cardGiaoHoaToc.classList.remove("active");
     }
 
     var hienThiTienShipEl = document.getElementById("hienThiTienShip");
@@ -919,6 +1155,10 @@ function thayDoiVanChuyen() {
 // 7. XỬ LÝ VOUCHER (MÃ GIẢM GIÁ)
 // ===================================================================
 function thayDoiVoucher() {
+    if (typeof kiemTraDangNhap === "function" && !kiemTraDangNhap()) {
+        chuyenDenTrangDangNhap("Vui lòng đăng nhập để sử dụng voucher giảm giá!", "index.php?action=checkout");
+        return;
+    }
     var selectEl = document.getElementById("selectVoucher");
     maVoucherHienTai = selectEl ? selectEl.value : "";
     var nhanEl = document.getElementById("hienThiNhanVoucher");
@@ -1034,6 +1274,12 @@ function tinhTongTien() {
 // 10. XỬ LÝ KHI NGƯỜI DÙNG BẤM "ĐẶT HÀNG"
 // ===================================================================
 function xuLyDatHang() {
+    // 0. Bắt buộc đăng nhập trước khi đặt hàng
+    if (typeof kiemTraDangNhap === "function" && !kiemTraDangNhap()) {
+        chuyenDenTrangDangNhap("Vui lòng đăng nhập để đặt hàng!", "index.php?action=checkout");
+        return;
+    }
+
     var cart = layGioHang();
     if (!cart || cart.length === 0) {
         alert("Giỏ hàng của bạn đang trống! Vui lòng chọn sản phẩm vào giỏ trước.");
@@ -1077,6 +1323,27 @@ function xuLyDatHang() {
 
     // 2. Tính tiền và tạo mã đơn hàng
     var ketQuaTien = tinhTongTien();
+
+    // Kiểm tra điều kiện vận chuyển hỏa tốc tại thời điểm nhấn nút Đặt hàng
+    var infoVanChuyen = tinhThongTinGiaoHang(new Date());
+    if (phuongThucVanChuyenHienTai === "express" && !infoVanChuyen.duocGiaoHoaToc) {
+        alert("Đã qua 08:00 sáng, đơn hàng không thể chọn Giao hỏa tốc. Hệ thống đã tự động chuyển sang Giao thường.");
+        chonPhuongThucVanChuyen("standard");
+        if (btnDatHang) {
+            btnDatHang.disabled = false;
+            btnDatHang.innerHTML = 'Đặt hàng';
+        }
+        return;
+    }
+
+    // Thời gian đặt hàng cố định (không tự động thay đổi sau khi đặt)
+    var now = new Date();
+    var orderDate = dinhDangNgay(now); // Ví dụ: "26/11/2026"
+    var orderTime = dinhDangGio(now);  // Ví dụ: "07:30"
+    var estimatedDeliveryDate = (phuongThucVanChuyenHienTai === "express") ? infoVanChuyen.ngayGiaoHoaToc : infoVanChuyen.ngayGiaoThuong;
+    var estimatedDeliveryTime = (phuongThucVanChuyenHienTai === "express") ? infoVanChuyen.gioGiaoHoaToc : infoVanChuyen.gioGiaoThuong;
+    var shippingMethodName = (phuongThucVanChuyenHienTai === "express") ? "Giao hỏa tốc" : "Giao thường";
+
     var maDonHang = "DH" + Math.floor(1000 + Math.random() * 9000);
     var loiNhan = document.getElementById("inputLoiNhan") ? document.getElementById("inputLoiNhan").value.trim() : "";
     var diaChiDayDu = diaChi.diaChiChiTiet + ", " + diaChi.phuongXa + ", " + diaChi.quanHuyen + ", " + diaChi.tinhThanh;
@@ -1090,7 +1357,7 @@ function xuLyDatHang() {
     var tenPhuongThuc = (phuongThucThanhToanHienTai === "BANK") ? "Chuyển khoản ngân hàng" : "Thanh toán khi nhận hàng (COD)";
     var currentUser = (typeof getCurrentUser === "function") ? getCurrentUser() : null;
 
-    // Tạo đối tượng đơn hàng mới
+    // Tạo đối tượng đơn hàng mới với các trường vận chuyển cố định
     var donHangMoi = {
         id: maDonHang,
         userId: currentUser ? Number(currentUser.id) : null,
@@ -1099,12 +1366,19 @@ function xuLyDatHang() {
         address: diaChiDayDu,
         note: loiNhan,
         paymentMethod: tenPhuongThuc,
-        shippingMethod: document.getElementById("selectVanChuyen").value,
+        shippingMethod: phuongThucVanChuyenHienTai, // 'standard' hoặc 'express'
+        shippingMethodName: shippingMethodName,      // 'Giao thường' hoặc 'Giao hỏa tốc'
+        shippingFee: ketQuaTien.phiVanChuyen,       // 30000 hoặc 50000
+        orderDate: orderDate,                       // Ngày đặt (dd/mm/yyyy)
+        orderTime: orderTime,                       // Giờ đặt (hh:mm)
+        estimatedDeliveryDate: estimatedDeliveryDate, // Ngày giao dự kiến
+        estimatedDeliveryTime: estimatedDeliveryTime, // Giờ giao dự kiến (Trước 18:00 hoặc Trước hh:mm)
+        actualDeliveryTime: null,                   // Thời gian giao thực tế (Admin cập nhật khi hoàn thành)
+        deliveryHistory: [],                        // Lịch sử cập nhật ngày giao của Admin
         total: ketQuaTien.tongThanhToan,
-        shippingFee: ketQuaTien.phiVanChuyen,
         discount: ketQuaTien.giamGiaShip + ketQuaTien.giamGiaVoucher,
         voucher: maVoucherHienTai,
-        date: new Date().toLocaleDateString("vi-VN") + " " + new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }),
+        date: orderDate + " " + orderTime,
         status: "pending",
         statusText: "Chờ xác nhận",
         productSummary: tomTatSanPham.join(", "),
@@ -1135,10 +1409,19 @@ function xuLyDatHang() {
     var khungDatHangThanhCong = document.getElementById("khungDatHangThanhCong");
 
     document.getElementById("thanhCongMaDonHang").innerText = "#" + maDonHang;
+    var btnTheoDoi = document.getElementById("btnTheoDoiDonHangMoi");
+    if (btnTheoDoi) {
+        btnTheoDoi.href = "index.php?action=order-tracking&id=" + encodeURIComponent(maDonHang);
+    }
     document.getElementById("thanhCongTenNguoiNhan").innerText = donHangMoi.customer;
     document.getElementById("thanhCongSoDienThoai").innerText = donHangMoi.phone;
     document.getElementById("thanhCongDiaChi").innerText = donHangMoi.address;
     document.getElementById("thanhCongPhuongThuc").innerText = tenPhuongThuc;
+    document.getElementById("thanhCongVanChuyen").innerText = shippingMethodName + " (" + dinhDangTien(ketQuaTien.phiVanChuyen) + ")";
+    var thoiGianGiaoThanhCongEl = document.getElementById("thanhCongThoiGianGiao");
+    if (thoiGianGiaoThanhCongEl) {
+        thoiGianGiaoThanhCongEl.innerText = estimatedDeliveryDate + " (" + estimatedDeliveryTime + ")";
+    }
     document.getElementById("thanhCongTongTien").innerText = dinhDangTien(ketQuaTien.tongThanhToan);
 
     if (khungThanhToanChinh) khungThanhToanChinh.style.display = "none";

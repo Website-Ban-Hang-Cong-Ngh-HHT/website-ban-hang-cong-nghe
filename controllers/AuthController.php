@@ -18,8 +18,16 @@ class AuthController
     // =========================================================
     public function login(): void
     {
+        $redirectUrl = trim((string) ($_POST['redirect'] ?? $_GET['redirect'] ?? ''));
+
         if (is_logged_in()) {
-            redirect('index.php');
+            if ($redirectUrl !== '' && str_starts_with($redirectUrl, 'index.php')) {
+                if (!is_admin() && str_contains($redirectUrl, 'action=admin')) {
+                    redirect('index.php');
+                }
+                redirect($redirectUrl);
+            }
+            redirect(is_admin() ? 'index.php?action=admin' : 'index.php');
         }
 
         $error = null;
@@ -52,7 +60,22 @@ class AuthController
                     ];
 
                     flash_set('success', 'Xin chào ' . $user['full_name'] . '! Bạn đã đăng nhập thành công.');
-                    redirect('index.php');
+
+                    // Chuyển hướng người dùng về đúng trang mong muốn trước đó
+                    $target = $redirectUrl;
+
+                    // Nếu khách hàng đăng nhập mà URL yêu cầu là trang Admin -> chặn và chuyển về trang chủ
+                    if ($user['role'] !== 'admin' && str_contains($target, 'action=admin')) {
+                        flash_set('warning', 'Tài khoản khách hàng không có quyền truy cập trang Quản trị!');
+                        $target = 'index.php';
+                    }
+
+                    // Nếu không có URL chuyển hướng hợp lệ, chuyển về Admin (nếu là admin) hoặc Trang chủ
+                    if ($target === '' || !str_starts_with($target, 'index.php')) {
+                        $target = ($user['role'] === 'admin') ? 'index.php?action=admin' : 'index.php';
+                    }
+
+                    redirect($target);
                 }
             }
         }
@@ -132,7 +155,12 @@ class AuthController
                     ]);
 
                     flash_set('success', 'Đăng ký thành công! Vui lòng đăng nhập bằng tài khoản vừa tạo.');
-                    redirect('index.php?action=login');
+                    $redirectTarget = trim((string) ($_POST['redirect'] ?? $_GET['redirect'] ?? ''));
+                    $loginTarget = 'index.php?action=login';
+                    if ($redirectTarget !== '' && str_starts_with($redirectTarget, 'index.php')) {
+                        $loginTarget .= '&redirect=' . urlencode($redirectTarget);
+                    }
+                    redirect($loginTarget);
                 } catch (PDOException $e) {
                     // Vi phạm ràng buộc UNIQUE (username/email vừa bị người khác đăng ký)
                     $error = ((int) $e->getCode() === 23000)
@@ -175,7 +203,12 @@ class AuthController
         session_destroy();
         session_start();
 
-        flash_set('success', 'Bạn đã đăng xuất khỏi hệ thống.');
-        redirect('index.php');
+        // Xóa hoàn toàn cache để ngăn chặn việc bấm nút Back trình duyệt quay lại trang cần đăng nhập
+        header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+        header("Cache-Control: post-check=0, pre-check=0", false);
+        header("Pragma: no-cache");
+
+        flash_set('success', 'Bạn đã đăng xuất khỏi hệ thống thành công.');
+        redirect('index.php?action=login');
     }
 }

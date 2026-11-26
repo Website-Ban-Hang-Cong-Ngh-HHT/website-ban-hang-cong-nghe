@@ -10,10 +10,17 @@ $flash        = flash_get();
 $alertType    = $flash['type'] ?? '';
 $alertMessage = $flash['message'] ?? '';
 
+$redirectParam = $_GET['redirect'] ?? $_POST['redirect'] ?? '';
+$msgParam      = $_GET['msg'] ?? '';
+
 if (!empty($error)) {
     $alertType    = 'danger';
     $alertMessage = $error;
+} elseif (!empty($msgParam) && empty($alertMessage)) {
+    $alertType    = 'warning';
+    $alertMessage = $msgParam;
 }
+
 if ($alertType === 'error') {
     $alertType = 'danger';
 }
@@ -59,6 +66,8 @@ $alertIcon = $alertType === 'success'
             <!-- Form Đăng nhập (gửi dữ liệu về AuthController::login) -->
             <form id="loginForm" method="post" action="index.php?action=login">
                 <?= csrf_field() ?>
+                <!-- Lưu URL cần quay lại sau khi đăng nhập thành công -->
+                <input type="hidden" name="redirect" value="<?= e($redirectParam) ?>">
 
                 <!-- Tên đăng nhập / Email -->
                 <div class="mb-3">
@@ -108,7 +117,7 @@ $alertIcon = $alertType === 'success'
                 <!-- Dòng chuyển sang trang Đăng ký -->
                 <div class="text-center pt-2 pb-2 border-top">
                     <span class="small text-muted">Bạn chưa có tài khoản?</span>
-                    <a href="index.php?action=register" class="small fw-bold text-primary text-decoration-none ms-1">
+                    <a href="index.php?action=register<?= $redirectParam ? '&redirect=' . urlencode($redirectParam) : '' ?>" class="small fw-bold text-primary text-decoration-none ms-1">
                         Đăng ký ngay
                     </a>
                 </div>

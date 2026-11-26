@@ -12,6 +12,13 @@ class OrderController
         }
 
         $payload = json_decode(file_get_contents('php://input'), true);
+
+        if (!is_logged_in()) {
+            http_response_code(401);
+            echo json_encode(['message' => 'Vui lòng đăng nhập để đặt hàng.']);
+            return;
+        }
+
         $token = $payload['_csrf'] ?? '';
         if (!is_string($token) || empty($_SESSION['_csrf']) || !hash_equals($_SESSION['_csrf'], $token)) {
             http_response_code(419);

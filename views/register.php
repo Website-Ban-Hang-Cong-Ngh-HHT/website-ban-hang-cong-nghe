@@ -18,6 +18,8 @@ if ($alertType === 'error') {
 $alertIcon = $alertType === 'success'
     ? 'fa-circle-check'
     : ($alertType === 'warning' ? 'fa-circle-exclamation' : 'fa-triangle-exclamation');
+
+$redirectParam = trim((string) ($_GET['redirect'] ?? $_POST['redirect'] ?? ''));
 ?>
 
 <div class="auth-wrapper py-5">
@@ -45,6 +47,7 @@ $alertIcon = $alertType === 'success'
             <!-- Form Đăng ký (gửi dữ liệu về AuthController::register) -->
             <form id="registerForm" method="post" action="index.php?action=register">
                 <?= csrf_field() ?>
+                <input type="hidden" name="redirect" value="<?= e($redirectParam) ?>">
 
                 <!-- 1. Họ và tên -->
                 <div class="mb-3">
@@ -166,7 +169,7 @@ $alertIcon = $alertType === 'success'
                 <!-- Liên kết quay về đăng nhập -->
                 <div class="text-center pt-2 border-top">
                     <span class="small text-muted">Bạn đã có tài khoản?</span>
-                    <a href="index.php?action=login" class="small fw-bold text-primary text-decoration-none ms-1">
+                    <a href="index.php?action=login<?= $redirectParam !== '' ? '&redirect=' . urlencode($redirectParam) : '' ?>" class="small fw-bold text-primary text-decoration-none ms-1">
                         Đăng nhập ngay
                     </a>
                 </div>

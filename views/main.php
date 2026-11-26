@@ -92,8 +92,8 @@ $authName     = $authUser['full_name'] ?? ($authUser['username'] ?? 'Khách');
                 <!-- 2.3. Khu vực Giỏ hàng và Tài khoản Đăng nhập / Đăng xuất -->
                 <div class="col-6 col-lg-4 order-2 order-lg-3 d-flex justify-content-end align-items-center gap-2">
                     
-                    <!-- Nút Giỏ Hàng -->
-                    <button type="button" class="header-action-btn cart-btn" data-bs-toggle="modal" data-bs-target="#cartModal" title="Xem giỏ hàng">
+                    <!-- Nút Giỏ Hàng: Kiểm tra đăng nhập trước khi mở -->
+                    <button type="button" class="header-action-btn cart-btn" onclick="moModalGioHang()" title="Xem giỏ hàng">
                         <i class="fa-solid fa-cart-shopping fa-lg"></i>
                         <span class="d-none d-sm-inline">Giỏ hàng</span>
                         <span id="cartBadgeCount" class="cart-badge" style="display: none;">0</span>
@@ -126,8 +126,23 @@ $authName     = $authUser['full_name'] ?? ($authUser['username'] ?? 'Khách');
                                 </li>
                                 <?php if ($authUser && !$isAdminUser): ?>
                                     <li>
-                                        <button class="dropdown-item py-2" type="button" data-bs-toggle="modal" data-bs-target="#orderHistoryModal" onclick="renderOrderHistory()">
+                                        <a class="dropdown-item py-2 fw-semibold text-warning-emphasis" href="index.php?action=order-tracking">
+                                            <i class="fa-solid fa-truck-fast text-warning me-2"></i> Theo dõi giao hàng
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <button class="dropdown-item py-2" type="button" onclick="xemLichSuDonHang()">
                                             <i class="fa-solid fa-clock-rotate-left text-primary me-2"></i> Lịch sử đơn hàng
+                                        </button>
+                                    </li>
+                                    <li>
+                                        <button class="dropdown-item py-2" type="button" onclick="quanLyThongTinTaiKhoan()">
+                                            <i class="fa-solid fa-id-badge text-primary me-2"></i> Thông tin tài khoản
+                                        </button>
+                                    </li>
+                                    <li>
+                                        <button class="dropdown-item py-2" type="button" onclick="quanLyYeuThich()">
+                                            <i class="fa-solid fa-heart text-danger me-2"></i> Danh sách yêu thích
                                         </button>
                                     </li>
                                 <?php endif; ?>
@@ -388,12 +403,12 @@ $authName     = $authUser['full_name'] ?? ($authUser['username'] ?? 'Khách');
     <script>
         window.CURRENT_USER = <?php
             $jsUser = $authUser ? [
-                'id'       => (int) $authUser['id'],
+                'id'       => (int) ($authUser['id'] ?? 0),
                 'fullName' => $authName,
-                'username' => $authUser['username'],
-                'email'    => $authUser['email'],
-                'phone'    => $authUser['phone'],
-                'role'     => $authUser['role'],
+                'username' => $authUser['username'] ?? '',
+                'email'    => $authUser['email'] ?? '',
+                'phone'    => $authUser['phone'] ?? '',
+                'role'     => $authUser['role'] ?? 'customer',
             ] : null;
 
             echo json_encode(

@@ -897,22 +897,37 @@ function selectVariantStorage(storageName) {
 // =============================================================
 // PHẦN 7: QUẢN LÝ GIỎ HÀNG VỚI BIẾN THỂ (CART WITH VARIANTS)
 // =============================================================
-const CART_STORAGE_KEY = 'techstore_cart_v2';
+// Khóa lưu giỏ hàng trong localStorage phân biệt theo từng tài khoản đăng nhập (Bảo vệ dữ liệu khách hàng)
+function getCartStorageKey() {
+    const user = (typeof getCurrentUser === 'function') ? getCurrentUser() : null;
+    return (user && user.id) ? `techstore_cart_v2_u${user.id}` : 'techstore_cart_v2_guest';
+}
 
 // Lấy danh sách giỏ hàng
 function getCart() {
-    const data = localStorage.getItem(CART_STORAGE_KEY);
+    const key = getCartStorageKey();
+    const data = localStorage.getItem(key);
     return data ? JSON.parse(data) : [];
 }
 
 // Lưu danh sách giỏ hàng
 function saveCart(cart) {
-    localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
+    const key = getCartStorageKey();
+    localStorage.setItem(key, JSON.stringify(cart));
+    // Lưu song song vào key chung để tương thích với các view khác
+    localStorage.setItem('techstore_cart_v2', JSON.stringify(cart));
     updateCartUI();
 }
 
 // Cập nhật số lượng trên icon giỏ hàng và danh sách trong Modal
 function updateCartUI() {
+    // Nếu chưa đăng nhập: ẩn số lượng giỏ hàng trên Header
+    if (typeof kiemTraDangNhap === 'function' && !kiemTraDangNhap()) {
+        const cartBadge = document.getElementById('cartBadgeCount');
+        if (cartBadge) cartBadge.style.display = 'none';
+        return;
+    }
+
     const cart = getCart();
     const totalCount = cart.reduce((sum, item) => sum + item.quantity, 0);
     const cartBadge = document.getElementById('cartBadgeCount');
@@ -923,8 +938,13 @@ function updateCartUI() {
     renderCartModal(cart);
 }
 
-// Thêm đúng biến thể vào giỏ hàng
+// Thêm đúng biến thể vào giỏ hàng (BẮT BUỘC ĐĂNG NHẬP)
 function addToCartVariant(productId, sku) {
+    if (typeof kiemTraDangNhap === 'function' && !kiemTraDangNhap()) {
+        chuyenDenTrangDangNhap('Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng!');
+        return;
+    }
+
     const product = PRODUCTS.find(p => p.id === productId);
     if (!product) return;
 
@@ -973,8 +993,13 @@ function addToCartVariant(productId, sku) {
     showToast(`Đã thêm "${product.name} (${variant.color} - ${variant.storage})" vào giỏ hàng!`, 'success');
 }
 
-// Nút "Mua ngay": Thêm vào giỏ hàng và mở ngay Modal Giỏ hàng
+// Nút "Mua ngay": BẮT BUỘC ĐĂNG NHẬP
 function buyNowVariant(productId, sku) {
+    if (typeof kiemTraDangNhap === 'function' && !kiemTraDangNhap()) {
+        chuyenDenTrangDangNhap('Vui lòng đăng nhập để mua hàng!');
+        return;
+    }
+
     addToCartVariant(productId, sku);
 
     // Đóng modal chi tiết
@@ -1113,11 +1138,22 @@ const DEFAULT_DEMO_ORDERS = [
         id: "DH105", 
         customer: "Nguyễn Văn An", 
         phone: "0988123456", 
+        address: "Số 123 Đường Cầu Giấy, Phường Dịch Vọng, Quận Cầu Giấy, Hà Nội",
         productSummary: "iPhone 15 (Đen - 128GB) x 1", 
-        total: 18000000, 
-        date: "17/11/2026", 
+        total: 18030000, 
+        shippingMethod: "standard",
+        shippingMethodName: "Giao thường",
+        shippingFee: 30000,
+        orderDate: "17/11/2026",
+        orderTime: "09:30",
+        estimatedDeliveryDate: "17/11/2026",
+        estimatedDeliveryTime: "Trước 18:00",
+        actualDeliveryTime: "17/11/2026 15:45",
+        deliveryHistory: [],
+        date: "17/11/2026 09:30", 
         status: "completed", 
         statusText: "Đã giao hàng",
+        paymentMethod: "Thanh toán khi nhận hàng (COD)",
         items: [
             { name: "iPhone 15", color: "Đen", storage: "128GB", sku: "IP15-BLK-128", price: 18000000, quantity: 1 }
         ]
@@ -1126,11 +1162,22 @@ const DEFAULT_DEMO_ORDERS = [
         id: "DH104", 
         customer: "Lê Hoàng Nam", 
         phone: "0912345678", 
+        address: "Tòa nhà Landmark 81, 720A Điện Biên Phủ, Phường 22, Quận Bình Thạnh, TP. Hồ Chí Minh",
         productSummary: "MacBook Pro 14 M3 (Xám - 18GB/512GB) x 1", 
-        total: 46990000, 
-        date: "17/11/2026", 
+        total: 47040000, 
+        shippingMethod: "express",
+        shippingMethodName: "Giao hỏa tốc",
+        shippingFee: 50000,
+        orderDate: "17/11/2026",
+        orderTime: "07:15",
+        estimatedDeliveryDate: "17/11/2026",
+        estimatedDeliveryTime: "Trước 09:15",
+        actualDeliveryTime: null,
+        deliveryHistory: [],
+        date: "17/11/2026 07:15", 
         status: "shipping", 
         statusText: "Đang vận chuyển",
+        paymentMethod: "Chuyển khoản ngân hàng",
         items: [
             { name: "MacBook Pro 14 M3", color: "Xám Không Gian", storage: "18GB / 512GB", sku: "MBP14-GRY-512", price: 46990000, quantity: 1 }
         ]
@@ -1139,11 +1186,22 @@ const DEFAULT_DEMO_ORDERS = [
         id: "DH103", 
         customer: "Trần Thị Mai", 
         phone: "0977889900", 
+        address: "Số 45 Lê Lợi, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh",
         productSummary: "iPhone 15 (Xanh dương - 256GB) x 1", 
-        total: 20500000, 
-        date: "16/11/2026", 
+        total: 20530000, 
+        shippingMethod: "standard",
+        shippingMethodName: "Giao thường",
+        shippingFee: 30000,
+        orderDate: "16/11/2026",
+        orderTime: "14:20",
+        estimatedDeliveryDate: "16/11/2026",
+        estimatedDeliveryTime: "Trước 18:00",
+        actualDeliveryTime: null,
+        deliveryHistory: [],
+        date: "16/11/2026 14:20", 
         status: "pending", 
         statusText: "Chờ xác nhận",
+        paymentMethod: "Thanh toán khi nhận hàng (COD)",
         items: [
             { name: "iPhone 15", color: "Xanh dương", storage: "256GB", sku: "IP15-BLU-256", price: 20500000, quantity: 1 }
         ]
@@ -1174,17 +1232,39 @@ function filterOrderHistory(status) {
     renderOrderHistory();
 }
 
+// Xử lý hủy đơn hàng từ phía khách hàng (BẮT BUỘC ĐĂNG NHẬP & CHỈ ĐƯỢC HỦY ĐƠN CỦA CHÍNH MÌNH)
+// Quy định: Chỉ được hủy khi đơn ở trạng thái pending (Chờ xác nhận), confirmed (Đã xác nhận), processing (Đang chuẩn bị hàng)
+// Không được hủy khi đơn đang vận chuyển (shipping), đã giao (completed) hoặc đã hủy (cancelled)
 function cancelCustomerOrder(orderId) {
+    if (typeof kiemTraDangNhap === 'function' && !kiemTraDangNhap()) {
+        chuyenDenTrangDangNhap('Vui lòng đăng nhập để hủy đơn hàng!');
+        return;
+    }
     const user = getCurrentUser();
     if (!user || user.role === 'admin') return;
     const orders = getStoredOrders();
+    // Khách hàng này tuyệt đối không xem hoặc hủy được đơn hàng của khách hàng khác
     const order = orders.find(item => String(item.id) === String(orderId) && Number(item.userId) === Number(user.id));
-    if (!order || order.status !== 'pending') return;
-    if (!window.confirm(`Bạn có chắc muốn hủy đơn hàng #${order.id}?`)) return;
+    if (!order) {
+        alert('Không tìm thấy đơn hàng hoặc bạn không có quyền thao tác trên đơn hàng này!');
+        return;
+    }
+
+    const cancellableStatuses = ['pending', 'confirmed', 'processing'];
+    if (!cancellableStatuses.includes(order.status)) {
+        alert(`Không thể hủy đơn hàng #${order.id} vì đơn đang ở trạng thái "${order.statusText || order.status}"!`);
+        return;
+    }
+
+    if (!window.confirm(`Bạn có chắc chắn muốn hủy đơn hàng #${order.id}?`)) return;
+
     order.status = 'cancelled';
     order.statusText = 'Đã hủy';
     saveStoredOrders(orders);
     renderOrderHistory();
+    if (typeof showToast === 'function') {
+        showToast(`Đã hủy đơn hàng #${order.id} thành công!`, 'info');
+    }
 }
 
 function renderOrderHistory() {
@@ -1197,6 +1277,7 @@ function renderOrderHistory() {
         <div class="d-flex flex-wrap gap-2 mb-3" role="group" aria-label="Lọc đơn hàng theo trạng thái">
             <button type="button" class="btn btn-sm ${activeOrderHistoryFilter === 'all' ? 'btn-primary' : 'btn-outline-primary'}" onclick="filterOrderHistory('all')">Tất cả</button>
             <button type="button" class="btn btn-sm ${activeOrderHistoryFilter === 'pending' ? 'btn-warning' : 'btn-outline-warning'}" onclick="filterOrderHistory('pending')">Chờ xác nhận</button>
+            <button type="button" class="btn btn-sm ${activeOrderHistoryFilter === 'processing' ? 'btn-info' : 'btn-outline-info'}" onclick="filterOrderHistory('processing')">Đang xử lý</button>
             <button type="button" class="btn btn-sm ${activeOrderHistoryFilter === 'shipping' ? 'btn-primary' : 'btn-outline-primary'}" onclick="filterOrderHistory('shipping')">Đang vận chuyển</button>
             <button type="button" class="btn btn-sm ${activeOrderHistoryFilter === 'completed' ? 'btn-success' : 'btn-outline-success'}" onclick="filterOrderHistory('completed')">Đã giao hàng</button>
             <button type="button" class="btn btn-sm ${activeOrderHistoryFilter === 'cancelled' ? 'btn-secondary' : 'btn-outline-secondary'}" onclick="filterOrderHistory('cancelled')">Đã hủy</button>
@@ -1212,26 +1293,104 @@ function renderOrderHistory() {
     }
 
     container.innerHTML = filters + filteredOrders.map(order => {
-        const statusClass = order.status === 'completed' ? 'bg-success' : order.status === 'shipping' ? 'bg-primary' : order.status === 'cancelled' ? 'bg-secondary' : 'bg-warning text-dark';
+        let statusClass = 'bg-warning text-dark';
+        if (order.status === 'completed') statusClass = 'bg-success';
+        else if (order.status === 'shipping') statusClass = 'bg-primary';
+        else if (order.status === 'processing') statusClass = 'bg-info text-dark';
+        else if (order.status === 'confirmed') statusClass = 'bg-primary';
+        else if (order.status === 'cancelled') statusClass = 'bg-secondary';
+
+        // Huy hiệu phương thức vận chuyển (Giao thường hoặc Giao hỏa tốc)
+        const isExpress = (order.shippingMethod === 'express');
+        const shipBadge = isExpress 
+            ? '<span class="badge bg-warning text-dark border"><i class="fa-solid fa-bolt me-1"></i> Giao hỏa tốc (50.000 ₫)</span>' 
+            : '<span class="badge bg-light text-primary border"><i class="fa-solid fa-truck me-1"></i> Giao thường (30.000 ₫)</span>';
+
+        // Thời gian giao hàng dự kiến (cố định theo đơn hàng)
+        const estDelivery = order.estimatedDeliveryDate 
+            ? `${escapeOrderHtml(order.estimatedDeliveryDate)} (${escapeOrderHtml(order.estimatedDeliveryTime || 'Trong ngày')})` 
+            : 'Trong ngày';
+
+        // Thời gian giao thực tế (nếu đơn đã hoàn thành)
+        const actualDeliveryHtml = (order.status === 'completed' && order.actualDeliveryTime)
+            ? `<div class="mt-1 text-success fw-semibold"><i class="fa-solid fa-circle-check me-1"></i><strong>Thời gian giao thực tế:</strong> ${escapeOrderHtml(order.actualDeliveryTime)}</div>`
+            : '';
+
+        // Thông báo nếu Admin có cập nhật thời gian giao hàng kèm lý do
+        let adminUpdateAlert = '';
+        if (order.deliveryHistory && Array.isArray(order.deliveryHistory) && order.deliveryHistory.length > 0) {
+            const lastChange = order.deliveryHistory[order.deliveryHistory.length - 1];
+            adminUpdateAlert = `
+                <div class="alert alert-warning py-2 px-3 small mt-2 mb-2 rounded-2">
+                    <div class="fw-bold text-dark"><i class="fa-solid fa-bell text-warning me-1"></i> Cập nhật thời gian giao từ cửa hàng:</div>
+                    <div class="mt-1">Thời gian mới: <strong class="text-danger">${escapeOrderHtml(order.estimatedDeliveryDate)} (${escapeOrderHtml(order.estimatedDeliveryTime)})</strong></div>
+                    <div class="text-muted fst-italic mt-1">Lý do: "${escapeOrderHtml(lastChange.reason || 'Điều chỉnh kế hoạch giao hàng')}" <span class="small">(${escapeOrderHtml(lastChange.changedAt || '')})</span></div>
+                </div>
+            `;
+        }
+
         const items = (order.items || []).map(item => {
             const product = (typeof PRODUCTS !== 'undefined' ? PRODUCTS : []).find(p => p.name === item.name || (p.variants || []).some(variant => variant.sku === item.sku));
             const variant = product && (product.variants || []).find(candidate => candidate.sku === item.sku);
             const image = item.image || (variant && variant.image) || (product && product.image) || '';
+            const variantText = (item.color || item.storage) ? `(${escapeOrderHtml(item.color || '')} · ${escapeOrderHtml(item.storage || '')})` : '';
             return `
             <div class="d-flex justify-content-between align-items-center gap-3 py-2 border-top small">
-                <span class="d-flex align-items-center gap-2"><img src="${escapeOrderHtml(image)}" alt="${escapeOrderHtml(item.name)}" class="rounded border" style="width:48px;height:48px;object-fit:cover" onerror="this.style.display='none'"><span>${escapeOrderHtml(item.name)} <span class="text-muted">(${escapeOrderHtml(item.color)} · ${escapeOrderHtml(item.storage)}) × ${Number(item.quantity) || 0}</span></span></span>
-                <span class="text-nowrap fw-semibold">${formatCurrency((Number(item.price) || 0) * (Number(item.quantity) || 0))}</span>
+                <span class="d-flex align-items-center gap-2">
+                    <img src="${escapeOrderHtml(image)}" alt="${escapeOrderHtml(item.name)}" class="rounded border p-1" style="width:48px;height:48px;object-fit:contain" onerror="this.style.display='none'">
+                    <span>${escapeOrderHtml(item.name)} <span class="text-muted">${variantText} × ${Number(item.quantity) || 1}</span></span>
+                </span>
+                <span class="text-nowrap fw-semibold">${formatCurrency((Number(item.price) || 0) * (Number(item.quantity) || 1))}</span>
             </div>`;
         }).join('');
-        return `<article class="border rounded-3 p-3 mb-3">
+
+        // Quy định hủy đơn: chỉ cho phép hủy khi đang pending, confirmed, hoặc processing
+        const canCancel = ['pending', 'confirmed', 'processing'].includes(order.status);
+        const cancelBtnHtml = canCancel 
+            ? `<button type="button" class="btn btn-outline-danger btn-sm" onclick="cancelCustomerOrder('${escapeOrderHtml(order.id)}')"><i class="fa-solid fa-xmark me-1"></i> Hủy đơn hàng</button>` 
+            : '';
+
+        return `<article class="border rounded-3 p-3 mb-3 bg-white shadow-sm">
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
-                <div><strong class="text-primary">#${escapeOrderHtml(order.id)}</strong><span class="text-muted ms-3 small">${escapeOrderHtml(order.date)}</span></div>
-                <span class="badge ${statusClass}">${escapeOrderHtml(order.statusText || 'Chờ xác nhận')}</span>
+                <div>
+                    <strong class="text-primary fs-6">#${escapeOrderHtml(order.id)}</strong>
+                    <span class="text-muted ms-2 small"><i class="fa-regular fa-clock me-1"></i>${escapeOrderHtml(order.date || (order.orderDate + ' ' + order.orderTime))}</span>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    ${shipBadge}
+                    <span class="badge ${statusClass}">${escapeOrderHtml(order.statusText || 'Chờ xác nhận')}</span>
+                </div>
             </div>
+
+            ${adminUpdateAlert}
+
             ${items || `<div class="small text-muted py-2">${escapeOrderHtml(order.productSummary)}</div>`}
-            <div class="small text-muted border-top pt-2 mt-1"><div><strong>Hình thức nhận:</strong> ${escapeOrderHtml(order.fulfillmentMethodText || (order.fulfillmentMethod === 'pickup' ? 'Nhận tại cửa hàng' : 'Giao tận nơi'))}</div><div><strong>Thanh toán:</strong> ${escapeOrderHtml(order.paymentMethod || 'COD (Thanh toán khi nhận hàng)')}</div><div class="mt-1"><strong>Địa chỉ nhận hàng:</strong> ${escapeOrderHtml(order.address || 'Chưa cập nhật')}</div>${order.note ? `<div class="mt-1"><strong>Ghi chú:</strong> ${escapeOrderHtml(order.note)}</div>` : ''}</div>
-            <div class="d-flex justify-content-between border-top pt-2 mt-1 fw-bold"><span>Tổng thanh toán</span><span class="text-danger">${formatCurrency(Number(order.total) || 0)}</span></div>
-            ${order.status === 'pending' ? `<div class="text-end mt-3"><button type="button" class="btn btn-outline-danger btn-sm" onclick="cancelCustomerOrder('${escapeOrderHtml(order.id)}')"><i class="fa-solid fa-xmark me-1"></i>Hủy đơn</button></div>` : ''}
+
+            <div class="small text-muted border-top pt-2 mt-2">
+                <div class="row g-1">
+                    <div class="col-12 col-md-6"><strong>Phương thức vận chuyển:</strong> ${shipBadge}</div>
+                    <div class="col-12 col-md-6 text-md-end"><strong>Dự kiến giao:</strong> <span class="text-dark fw-bold">${estDelivery}</span></div>
+                    <div class="col-12"><strong>Hình thức thanh toán:</strong> ${escapeOrderHtml(order.paymentMethod || 'COD (Thanh toán khi nhận hàng)')}</div>
+                    <div class="col-12"><strong>Địa chỉ nhận hàng:</strong> ${escapeOrderHtml(order.address || 'Chưa cập nhật')}</div>
+                    ${order.note ? `<div class="col-12"><strong>Ghi chú:</strong> ${escapeOrderHtml(order.note)}</div>` : ''}
+                    ${actualDeliveryHtml ? `<div class="col-12">${actualDeliveryHtml}</div>` : ''}
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center border-top pt-2 mt-2">
+                <span class="text-muted small">Phí ship: <b class="text-dark">${formatCurrency(order.shippingFee || 30000)}</b></span>
+                <div>
+                    <span class="fw-bold me-2">Tổng thanh toán:</span>
+                    <span class="h6 fw-bold text-danger mb-0">${formatCurrency(Number(order.total) || 0)}</span>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-end align-items-center gap-2 mt-3 pt-2 border-top">
+                ${cancelBtnHtml}
+                <a href="index.php?action=order-tracking&id=${escapeOrderHtml(order.id)}" class="btn btn-warning btn-sm fw-bold">
+                    <i class="fa-solid fa-truck-fast me-1"></i> Theo dõi giao hàng
+                </a>
+            </div>
         </article>`;
     }).join('');
 }
@@ -1244,8 +1403,13 @@ function saveStoredOrders(orders) {
 // =============================================================
 // PHẦN 8: ĐIỀU HƯỚNG TỪ GIỎ HÀNG SANG TRANG THANH TOÁN (CHECKOUT)
 // =============================================================
-// Chuyển hướng từ modal giỏ hàng sang trang thanh toán riêng biệt
+// Chuyển hướng từ modal giỏ hàng sang trang thanh toán riêng biệt (BẮT BUỘC ĐĂNG NHẬP)
 function goToCheckout() {
+    if (typeof kiemTraDangNhap === 'function' && !kiemTraDangNhap()) {
+        chuyenDenTrangDangNhap('Vui lòng đăng nhập để tiến hành thanh toán đơn hàng!', 'index.php?action=checkout');
+        return;
+    }
+
     const cart = getCart();
     if (!cart || !cart.some(item => item.selected !== false)) {
         showToast('Vui lòng chọn ít nhất một sản phẩm để thanh toán.', 'warning');
@@ -1269,13 +1433,135 @@ function handleCheckoutDemo() {
 }
 
 // =============================================================
-// PHẦN 9: XỬ LÝ ĐĂNG KÝ / ĐĂNG NHẬP / ĐĂNG XUẤT VỚI LOCALSTORAGE
+// PHẦN 9: CÁC HÀM XÁC THỰC VÀ PHÂN QUYỀN ĐĂNG NHẬP (RBAC)
+// Dành cho học viên mới học Front-End (HTML, CSS, JavaScript cơ bản)
 // =============================================================
-// Trạng thái đăng nhập được PHP truyền sang qua window.CURRENT_USER (session + MySQL)
+
+/**
+ * 1. Lấy thông tin tài khoản người dùng hiện tại
+ * Trạng thái đăng nhập được PHP truyền sang qua window.CURRENT_USER (từ session + MySQL)
+ */
 function getCurrentUser() {
     return (typeof window.CURRENT_USER !== 'undefined' && window.CURRENT_USER) ? window.CURRENT_USER : null;
 }
 
+/**
+ * 2. kiemTraDangNhap(): Kiểm tra người dùng đã đăng nhập hay chưa
+ * Trả về: true (đã đăng nhập) hoặc false (chưa đăng nhập)
+ */
+function kiemTraDangNhap() {
+    const user = getCurrentUser();
+    // Đã đăng nhập khi có thông tin đối tượng user và có id hợp lệ > 0
+    return (user !== null && typeof user === 'object' && Number(user.id) > 0);
+}
+
+/**
+ * 3. kiemTraQuyenAdmin(): Kiểm tra có quyền Quản trị viên (Admin) hay không
+ * Trả về: true nếu là Admin, false nếu không phải
+ */
+function kiemTraQuyenAdmin() {
+    const user = getCurrentUser();
+    return (kiemTraDangNhap() && user.role === 'admin');
+}
+
+/**
+ * 4. kiemTraQuyenKhachHang(): Kiểm tra có phải Khách hàng thông thường hay không
+ * Trả về: true nếu là Khách hàng (đã đăng nhập và role !== 'admin')
+ */
+function kiemTraQuyenKhachHang() {
+    const user = getCurrentUser();
+    return (kiemTraDangNhap() && user.role !== 'admin');
+}
+
+/**
+ * 5. chuyenDenTrangDangNhap(thongBao, urlQuayLai): Chuyển đến trang Đăng nhập
+ * Hiển thị alert thông báo lý do và truyền URL quay lại sau khi đăng nhập thành công
+ */
+function chuyenDenTrangDangNhap(thongBao, urlQuayLai) {
+    const msg = thongBao || 'Vui lòng đăng nhập để sử dụng chức năng này.';
+    const redirectUrl = urlQuayLai || window.location.href;
+    alert(msg);
+    // Chuyển hướng sang trang đăng nhập, đính kèm thông báo và URL quay lại
+    window.location.href = 'index.php?action=login&msg=' + encodeURIComponent(msg) + '&redirect=' + encodeURIComponent(redirectUrl);
+}
+
+/**
+ * 6. dangXuat(): Đăng xuất tài khoản an toàn
+ */
+function dangXuat() {
+    handleLogout();
+}
+
+/**
+ * 7. moModalGioHang(): Mở modal giỏ hàng (BẮT BUỘC ĐĂNG NHẬP)
+ */
+function moModalGioHang() {
+    if (!kiemTraDangNhap()) {
+        chuyenDenTrangDangNhap('Vui lòng đăng nhập để xem giỏ hàng của bạn!');
+        return;
+    }
+    const cartModalEl = document.getElementById('cartModal');
+    if (cartModalEl && window.bootstrap) {
+        const cartModal = new bootstrap.Modal(cartModalEl);
+        cartModal.show();
+    }
+}
+
+/**
+ * 8. xemLichSuDonHang(): Mở modal xem đơn hàng của tôi (BẮT BUỘC ĐĂNG NHẬP)
+ */
+function xemLichSuDonHang() {
+    if (!kiemTraDangNhap()) {
+        chuyenDenTrangDangNhap('Vui lòng đăng nhập để xem danh sách đơn hàng của bạn!');
+        return;
+    }
+    const modalEl = document.getElementById('orderHistoryModal');
+    if (modalEl && window.bootstrap) {
+        if (typeof renderOrderHistory === 'function') {
+            renderOrderHistory();
+        }
+        const modal = new bootstrap.Modal(modalEl);
+        modal.show();
+    }
+}
+
+/**
+ * 9. Các chức năng khách hàng khác: Đánh giá, Bình luận, Yêu thích, Thông tin tài khoản
+ * Tất cả đều bắt buộc kiểm tra đăng nhập trước khi thực hiện
+ */
+function danhGiaSanPham(productId) {
+    if (!kiemTraDangNhap()) {
+        chuyenDenTrangDangNhap('Vui lòng đăng nhập để đánh giá sản phẩm!');
+        return;
+    }
+    showToast('Cảm ơn bạn! Đánh giá sản phẩm đã được ghi nhận.', 'success');
+}
+
+function binhLuanSanPham(productId) {
+    if (!kiemTraDangNhap()) {
+        chuyenDenTrangDangNhap('Vui lòng đăng nhập để bình luận về sản phẩm!');
+        return;
+    }
+    showToast('Bình luận của bạn đã được gửi thành công.', 'success');
+}
+
+function quanLyYeuThich(productId) {
+    if (!kiemTraDangNhap()) {
+        chuyenDenTrangDangNhap('Vui lòng đăng nhập để quản lý danh sách yêu thích!');
+        return;
+    }
+    showToast('Đã lưu sản phẩm vào danh sách yêu thích!', 'success');
+}
+
+function quanLyThongTinTaiKhoan() {
+    if (!kiemTraDangNhap()) {
+        chuyenDenTrangDangNhap('Vui lòng đăng nhập để quản lý thông tin tài khoản!');
+        return;
+    }
+    showToast('Thông tin tài khoản đang hoạt động.', 'info');
+}
+
+// Cập nhật hiển thị giao diện đăng nhập / đăng xuất trên Header
 function updateAuthUI() {
     const user = getCurrentUser();
 
@@ -1347,12 +1633,12 @@ function updateAuthUI() {
     }
 }
 
+// Xử lý đăng xuất an toàn (gửi POST đến AuthController::logout kèm token CSRF)
 function handleLogout() {
     if (!confirm('Bạn có chắc chắn muốn đăng xuất tài khoản?')) {
         return;
     }
 
-    // Gửi yêu cầu POST kèm CSRF token để PHP huỷ session đăng nhập
     const csrfMeta = document.querySelector('meta[name="csrf-token"]');
     const form = document.createElement('form');
     form.method = 'POST';
@@ -1369,13 +1655,19 @@ function handleLogout() {
     form.submit();
 }
 
+// Kiểm tra quyền truy cập khi vào URL trang Admin (index.php?action=admin)
 function checkAdminAccess() {
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('action') === 'admin') {
-        const user = getCurrentUser();
-        if (!user || user.role !== 'admin') {
-            alert('Cảnh báo: Bạn phải đăng nhập tài khoản Admin để truy cập trang này!');
-            window.location.href = 'index.php?action=login';
+        // Chưa đăng nhập -> Chuyển về login
+        if (!kiemTraDangNhap()) {
+            chuyenDenTrangDangNhap('Vui lòng đăng nhập tài khoản Quản trị để tiếp tục.', 'index.php?action=admin');
+            return false;
+        }
+        // Đã đăng nhập nhưng là khách hàng thông thường -> Từ chối quyền và về trang chủ
+        if (!kiemTraQuyenAdmin()) {
+            alert('Cảnh báo: Bạn không có quyền truy cập trang Quản trị! Chức năng này chỉ dành riêng cho Admin.');
+            window.location.href = 'index.php';
             return false;
         }
     }
@@ -1390,6 +1682,11 @@ function checkAdminAccess() {
 let CURRENT_ADMIN_VARIANT_PRODUCT_ID = null;
 
 function openVariantsManagerModal(productId) {
+    if (typeof kiemTraQuyenAdmin === 'function' && !kiemTraQuyenAdmin()) {
+        alert('Cảnh báo: Bạn không có quyền truy cập chức năng này! Chức năng chỉ dành cho Admin.');
+        return;
+    }
+
     const product = PRODUCTS.find(p => p.id === productId);
     if (!product) {
         alert('Không tìm thấy sản phẩm!');
@@ -1456,6 +1753,11 @@ function renderAdminVariantsTable(product) {
 
 // Lưu tất cả thay đổi về Giá và Tồn kho của các biến thể
 function saveAllVariantsChanges() {
+    if (typeof kiemTraQuyenAdmin === 'function' && !kiemTraQuyenAdmin()) {
+        alert('Cảnh báo: Bạn không có quyền sửa biến thể sản phẩm!');
+        return;
+    }
+
     const product = PRODUCTS.find(p => p.id === CURRENT_ADMIN_VARIANT_PRODUCT_ID);
     if (!product || !product.variants) return;
 
@@ -1510,6 +1812,11 @@ function saveAllVariantsChanges() {
 
 // Thêm một biến thể mới vào sản phẩm
 function addNewVariantToProduct() {
+    if (typeof kiemTraQuyenAdmin === 'function' && !kiemTraQuyenAdmin()) {
+        alert('Cảnh báo: Bạn không có quyền thêm biến thể mới!');
+        return;
+    }
+
     const product = PRODUCTS.find(p => p.id === CURRENT_ADMIN_VARIANT_PRODUCT_ID);
     if (!product) return;
 
@@ -1596,8 +1903,13 @@ function addNewVariantToProduct() {
     showToast(`Đã thêm phiên bản "${color} - ${storage}" thành công!`, 'success');
 }
 
-// Xóa một biến thể
+// Xóa một biến thể (ADMIN ONLY)
 function deleteVariant(index) {
+    if (typeof kiemTraQuyenAdmin === 'function' && !kiemTraQuyenAdmin()) {
+        alert('Cảnh báo: Bạn không có quyền xóa biến thể sản phẩm!');
+        return;
+    }
+
     const product = PRODUCTS.find(p => p.id === CURRENT_ADMIN_VARIANT_PRODUCT_ID);
     if (!product || !product.variants) return;
 
@@ -1619,6 +1931,11 @@ function deleteVariant(index) {
 // PHẦN 11: CHỈNH SỬA THÔNG TIN CHUNG SẢN PHẨM TRONG ADMIN (MODAL 8 TRƯỜNG)
 // =============================================================
 function openEditProductModal(productId) {
+    if (typeof kiemTraQuyenAdmin === 'function' && !kiemTraQuyenAdmin()) {
+        alert('Cảnh báo: Bạn không có quyền chỉnh sửa thông tin sản phẩm!');
+        return;
+    }
+
     const product = PRODUCTS.find(p => p.id === productId);
     if (!product) return;
 
@@ -1670,6 +1987,11 @@ function previewEditImage() {
 }
 
 function saveProductChanges() {
+    if (typeof kiemTraQuyenAdmin === 'function' && !kiemTraQuyenAdmin()) {
+        alert('Cảnh báo: Bạn không có quyền lưu thay đổi sản phẩm!');
+        return;
+    }
+
     const idInput = document.getElementById('editProductId');
     const nameInput = document.getElementById('editProductName');
     const categorySelect = document.getElementById('editProductCategory');
@@ -1733,8 +2055,13 @@ function saveProductChanges() {
     if (typeof renderAdminProductTable === 'function') renderAdminProductTable();
 }
 
-// Xóa sản phẩm khỏi hệ thống
+// Xóa sản phẩm khỏi hệ thống (ADMIN ONLY)
 function deleteProduct(productId) {
+    if (typeof kiemTraQuyenAdmin === 'function' && !kiemTraQuyenAdmin()) {
+        alert('Cảnh báo: Bạn không có quyền xóa sản phẩm!');
+        return;
+    }
+
     const product = PRODUCTS.find(p => p.id === productId);
     if (!product) return;
 
@@ -1747,10 +2074,15 @@ function deleteProduct(productId) {
 }
 
 // =============================================================
-// PHẦN 12: THÊM SẢN PHẨM MỚI KÈM BIẾN THỂ TRONG ADMIN
+// PHẦN 12: THÊM SẢN PHẨM MỚI KÈM BIẾN THỂ TRONG ADMIN (ADMIN ONLY)
 // =============================================================
 function handleAddProductWithVariants(event) {
     if (event) event.preventDefault();
+
+    if (typeof kiemTraQuyenAdmin === 'function' && !kiemTraQuyenAdmin()) {
+        alert('Cảnh báo: Bạn không có quyền thêm sản phẩm mới!');
+        return;
+    }
 
     const nameInput = document.getElementById('addProductName');
     const categorySelect = document.getElementById('addProductCategory');

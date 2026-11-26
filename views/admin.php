@@ -1,3 +1,24 @@
+<?php
+// KIỂM TRA BẢO MẬT: Bắt buộc đăng nhập tài khoản Admin mới được vào trang này
+// Lưu ý: Kiểm tra phân quyền và cấu hình Header đã được xử lý tại HomeController::admin()
+if (!is_logged_in()) {
+    if (!headers_sent()) {
+        header('Location: index.php?action=login&redirect=' . urlencode('index.php?action=admin'));
+        exit;
+    }
+    echo '<script>window.location.href = "index.php?action=login&redirect=' . urlencode('index.php?action=admin') . '";</script>';
+    exit;
+}
+
+if (!is_admin()) {
+    if (!headers_sent()) {
+        header('Location: index.php');
+        exit;
+    }
+    echo '<script>window.location.href = "index.php";</script>';
+    exit;
+}
+?>
 <!-- ========================================================================== -->
 <!-- TECH STORE - GIAO DIỆN QUẢN TRỊ ADMIN CHUYÊN NGHIỆP (ADMIN DASHBOARD)      -->
 <!-- Bố cục chuẩn E-commerce: Sidebar cố định bên trái, Header Admin, 10 Tabs   -->
@@ -349,8 +370,10 @@
                                 <tr>
                                     <th>Mã Đơn</th>
                                     <th>Khách Hàng</th>
+                                    <th>Vận Chuyển</th>
                                     <th>Sản Phẩm Đặt Mua</th>
                                     <th>Ngày Đặt</th>
+                                    <th>Dự Kiến Giao</th>
                                     <th>Tổng Tiền</th>
                                     <th>Trạng Thái</th>
                                     <th class="text-end">Chi Tiết</th>
@@ -518,8 +541,11 @@
                                     <th>Mã Đơn</th>
                                     <th>Khách Hàng</th>
                                     <th>SĐT Liên Hệ</th>
+                                    <th>Vận Chuyển</th>
                                     <th>Sản Phẩm</th>
                                     <th>Ngày Đặt</th>
+                                    <th>Dự Kiến Giao</th>
+                                    <th>Giao Thực Tế</th>
                                     <th>Tổng Tiền</th>
                                     <th>Trạng Thái</th>
                                     <th class="text-end">Thao Tác</th>
@@ -1119,6 +1145,30 @@
     </div>
 </div>
 
+<!-- ========================================================= -->
+<!-- MODAL 4: CHI TIẾT ĐƠN HÀNG & QUẢN LÝ VẬN CHUYỂN (ADMIN)   -->
+<!-- ========================================================= -->
+<div class="modal fade" id="adminOrderDetailModal" tabindex="-1" aria-labelledby="adminOrderDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title fw-bold" id="adminOrderDetailModalLabel">
+                    <i class="fa-solid fa-truck-fast me-2"></i> Chi Tiết Đơn Hàng & Quản Lý Vận Chuyển: <span id="adminModalOrderId" class="text-warning">...</span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Đóng"></button>
+            </div>
+
+            <div class="modal-body p-4" id="adminOrderDetailModalBody">
+                <!-- Nội dung chi tiết đơn hàng do JavaScript render vào -->
+            </div>
+
+            <div class="modal-footer bg-light py-2">
+                <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Danh sách khách hàng thật từ MySQL (do HomeController truyền sang) -->
 <script>
     window.ADMIN_CUSTOMERS = <?= json_encode(
@@ -1134,9 +1184,14 @@
 document.addEventListener('DOMContentLoaded', () => {
     // 1. Kiểm tra lại quyền Admin (nếu chưa đăng nhập sẽ lập tức bị chặn)
     const user = typeof getCurrentUser === 'function' ? getCurrentUser() : null;
-    if (!user || user.role !== 'admin') {
+    const laAdmin = (typeof kiemTraQuyenAdmin === 'function') ? kiemTraQuyenAdmin() : (user && user.role === 'admin');
+    if (!laAdmin) {
         alert('Cảnh báo: Bạn phải đăng nhập tài khoản Admin để truy cập trang này!');
-        window.location.href = 'index.php?action=login';
+        if (typeof chuyenDenTrangDangNhap === 'function') {
+            chuyenDenTrangDangNhap('Vui lòng đăng nhập tài khoản Admin để truy cập trang này!', 'index.php?action=admin');
+        } else {
+            window.location.href = 'index.php?action=login&redirect=' + encodeURIComponent('index.php?action=admin');
+        }
         return;
     }
 
@@ -1305,28 +1360,79 @@ function handleAdminGlobalSearch(val) {
     }
 }
 
+// Hàm chuyển chuỗi dd/mm/yyyy sang yyyy-mm-dd cho thẻ input date
+function chuyenSangYMD(dmyString) {
+    if (!dmyString) {
+        const d = new Date();
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+    const parts = dmyString.split('/');
+    if (parts.length === 3) {
+        return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+    }
+    return dmyString;
+}
+
+// Hàm chuyển chuỗi yyyy-mm-dd sang dd/mm/yyyy
+function chuyenSangDMY(ymdString) {
+    if (!ymdString) return '';
+    const parts = ymdString.split('-');
+    if (parts.length === 3) {
+        return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+    return ymdString;
+}
+
 // Render dữ liệu Đơn hàng (Đồng bộ với các đơn đặt hàng mới từ khách hàng)
 function renderAdminOrdersData() {
     const orders = typeof getStoredOrders === 'function' ? getStoredOrders() : [];
+
+    // Helper tạo badge trạng thái
+    function taoBadgeTrangThai(status, text) {
+        let badgeClass = 'bg-warning text-dark';
+        if (status === 'completed') badgeClass = 'bg-success';
+        else if (status === 'shipping') badgeClass = 'bg-primary';
+        else if (status === 'processing') badgeClass = 'bg-info text-dark';
+        else if (status === 'confirmed') badgeClass = 'bg-primary';
+        else if (status === 'cancelled') badgeClass = 'bg-secondary';
+        return `<span class="badge ${badgeClass}">${text || status}</span>`;
+    }
+
+    // Helper tạo badge vận chuyển
+    function taoBadgeVanChuyen(method) {
+        if (method === 'express') {
+            return `<span class="badge bg-warning text-dark border"><i class="fa-solid fa-bolt me-1"></i>Hỏa tốc</span>`;
+        }
+        return `<span class="badge bg-info text-dark border"><i class="fa-solid fa-truck me-1"></i>Giao thường</span>`;
+    }
 
     // 1. Render đơn hàng mới nhất trên Dashboard
     const recentBody = document.getElementById('dashboardRecentOrdersBody');
     if (recentBody) {
         recentBody.innerHTML = orders.slice(0, 5).map(order => {
-            let badgeClass = 'bg-success';
-            if (order.status === 'shipping') badgeClass = 'bg-primary';
-            if (order.status === 'pending') badgeClass = 'bg-warning text-dark';
+            const shipBadge = taoBadgeVanChuyen(order.shippingMethod);
+            const statusBadge = taoBadgeTrangThai(order.status, order.statusText);
+            const estDelivery = order.estimatedDeliveryDate 
+                ? `<span class="small fw-semibold text-dark">${order.estimatedDeliveryDate}</span><br><span class="badge bg-light text-muted border">${order.estimatedDeliveryTime || 'Trong ngày'}</span>` 
+                : '<span class="small text-muted">Trong ngày</span>';
 
             return `
                 <tr>
                     <td class="fw-bold text-primary">#${order.id}</td>
                     <td class="fw-bold">${order.customer}</td>
-                    <td class="small text-truncate" style="max-width: 250px;" title="${order.productSummary}">${order.productSummary}</td>
-                    <td class="small text-muted">${order.date}</td>
+                    <td>${shipBadge}</td>
+                    <td class="small text-truncate" style="max-width: 200px;" title="${order.productSummary}">${order.productSummary}</td>
+                    <td class="small text-muted">${order.date || (order.orderDate + ' ' + order.orderTime)}</td>
+                    <td>${estDelivery}</td>
                     <td class="fw-bold text-danger">${formatCurrency(order.total)}</td>
-                    <td><span class="badge ${badgeClass}">${order.statusText}</span></td>
+                    <td>${statusBadge}</td>
                     <td class="text-end">
-                        <button class="btn btn-outline-primary btn-sm py-0 px-2" onclick="alert('Chi tiết đơn hàng #' + '${order.id}' + ':\\n' + '${order.productSummary}')">Xem</button>
+                        <button class="btn btn-primary btn-sm py-1 px-2" onclick="openAdminOrderDetailModal('${order.id}')" title="Xem chi tiết & Vận chuyển">
+                            <i class="fa-solid fa-eye me-1"></i> Xem
+                        </button>
                     </td>
                 </tr>
             `;
@@ -1337,26 +1443,430 @@ function renderAdminOrdersData() {
     const allBody = document.getElementById('adminAllOrdersTableBody');
     if (allBody) {
         allBody.innerHTML = orders.map(order => {
-            let badgeClass = 'bg-success';
-            if (order.status === 'shipping') badgeClass = 'bg-primary';
-            if (order.status === 'pending') badgeClass = 'bg-warning text-dark';
+            const shipBadge = taoBadgeVanChuyen(order.shippingMethod);
+            const statusBadge = taoBadgeTrangThai(order.status, order.statusText);
+            const estDelivery = order.estimatedDeliveryDate 
+                ? `<span class="small fw-semibold text-dark">${order.estimatedDeliveryDate}</span><br><span class="badge bg-light text-muted border">${order.estimatedDeliveryTime || 'Trong ngày'}</span>` 
+                : '<span class="small text-muted">Trong ngày</span>';
+
+            const actualDelivery = order.actualDeliveryTime 
+                ? `<span class="small text-success fw-bold"><i class="fa-solid fa-circle-check me-1"></i>${order.actualDeliveryTime}</span>` 
+                : '<span class="small text-muted">Chưa giao</span>';
+
+            const cancelReasonHint = (order.status === 'cancelled' && order.cancelReason) 
+                ? `<br><span class="text-danger small fst-italic" title="${order.cancelReason}">Lý do: ${order.cancelReason}</span>` 
+                : '';
 
             return `
                 <tr>
                     <td class="fw-bold text-primary">#${order.id}</td>
                     <td class="fw-bold">${order.customer}</td>
                     <td>${order.phone}</td>
-                    <td class="small text-truncate" style="max-width: 260px;" title="${order.productSummary}">${order.productSummary}</td>
-                    <td>${order.date}</td>
+                    <td>${shipBadge}</td>
+                    <td class="small text-truncate" style="max-width: 220px;" title="${order.productSummary}">${order.productSummary}</td>
+                    <td class="small text-muted">${order.date || (order.orderDate + ' ' + order.orderTime)}</td>
+                    <td>${estDelivery}</td>
+                    <td>${actualDelivery}</td>
                     <td class="fw-bold text-danger">${formatCurrency(order.total)}</td>
-                    <td><span class="badge ${badgeClass}">${order.statusText}</span></td>
+                    <td>${statusBadge}${cancelReasonHint}</td>
                     <td class="text-end">
-                        <button class="btn btn-primary btn-sm me-1" onclick="alert('Đã cập nhật trạng thái cho đơn hàng #' + '${order.id}')">Xử lý</button>
+                        <button class="btn btn-primary btn-sm me-1 fw-semibold" onclick="openAdminOrderDetailModal('${order.id}')" title="Chi tiết đơn hàng & Vận chuyển">
+                            <i class="fa-solid fa-truck-fast me-1"></i> Xử lý
+                        </button>
                     </td>
                 </tr>
             `;
         }).join('');
     }
+}
+
+// Mở Modal xem chi tiết đơn hàng & quản lý vận chuyển (ADMIN ONLY)
+function openAdminOrderDetailModal(orderId) {
+    if (typeof kiemTraQuyenAdmin === 'function' && !kiemTraQuyenAdmin()) {
+        alert('Cảnh báo: Bạn không có quyền truy cập chức năng này! Chức năng chỉ dành cho Admin.');
+        return;
+    }
+
+    const orders = typeof getStoredOrders === 'function' ? getStoredOrders() : [];
+    const order = orders.find(o => String(o.id) === String(orderId));
+    if (!order) {
+        alert('Không tìm thấy đơn hàng #' + orderId);
+        return;
+    }
+
+    const titleEl = document.getElementById('adminModalOrderId');
+    if (titleEl) titleEl.innerText = '#' + order.id;
+
+    const bodyEl = document.getElementById('adminOrderDetailModalBody');
+    if (!bodyEl) return;
+
+    const isExpress = (order.shippingMethod === 'express');
+    const shipBadge = isExpress 
+        ? '<span class="badge bg-warning text-dark border px-2 py-1"><i class="fa-solid fa-bolt me-1"></i> Giao hỏa tốc (50.000 ₫)</span>' 
+        : '<span class="badge bg-info text-dark border px-2 py-1"><i class="fa-solid fa-truck me-1"></i> Giao thường (30.000 ₫)</span>';
+
+    // Bảng sản phẩm chi tiết
+    const itemsHtml = (order.items && order.items.length > 0) ? order.items.map(item => {
+        const product = (typeof PRODUCTS !== 'undefined' ? PRODUCTS : []).find(p => p.name === item.name || (p.variants || []).some(v => v.sku === item.sku));
+        const variant = product && (product.variants || []).find(v => v.sku === item.sku);
+        const image = item.image || (variant && variant.image) || (product && product.image) || '';
+        const variantText = (item.color || item.storage) ? `(${item.color || ''} - ${item.storage || ''})` : '';
+
+        return `
+            <tr>
+                <td style="width: 50px;">
+                    <img src="${image}" alt="${item.name}" class="rounded border p-1" style="width: 44px; height: 44px; object-fit: contain;" onerror="this.style.display='none'">
+                </td>
+                <td>
+                    <div class="fw-bold text-dark small">${item.name}</div>
+                    <div class="text-muted small">${variantText}</div>
+                </td>
+                <td class="text-center small">x${item.quantity || 1}</td>
+                <td class="text-end small">${formatCurrency(item.price || 0)}</td>
+                <td class="text-end small fw-bold text-danger">${formatCurrency((item.price || 0) * (item.quantity || 1))}</td>
+            </tr>
+        `;
+    }).join('') : `<tr><td colspan="5" class="text-center py-2 text-muted">${order.productSummary || 'Không có chi tiết'}</td></tr>`;
+
+    // Phần Form cập nhật thời gian giao hàng
+    let deliveryUpdateFormHtml = '';
+    if (order.status === 'completed') {
+        deliveryUpdateFormHtml = `
+            <div class="alert alert-secondary py-3 small mb-0 rounded-3">
+                <i class="fa-solid fa-lock me-2 text-secondary fs-5 align-middle"></i>
+                <strong>Đơn hàng đã giao thành công.</strong> Không cho phép chỉnh sửa thời gian giao của đơn hàng đã hoàn tất.
+            </div>
+        `;
+    } else {
+        const currentDateValue = chuyenSangYMD(order.estimatedDeliveryDate);
+        const currentTimeValue = order.estimatedDeliveryTime || 'Trước 18:00';
+
+        deliveryUpdateFormHtml = `
+            <div class="card border border-warning bg-light p-3 rounded-3">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="fw-bold text-dark mb-0">
+                        <i class="fa-solid fa-pen-to-square text-warning me-1"></i> Cập Nhật Thời Gian Giao Hàng & Lý Do Thay Đổi
+                    </h6>
+                    <span class="badge bg-warning text-dark small">Dành cho Quản trị viên</span>
+                </div>
+                <p class="text-muted small mb-3">
+                    Khi cửa hàng dời lịch giao hàng hoặc điều phối lại, hãy cập nhật ngày giờ và bắt buộc nhập lý do để khách hàng được thông báo minh bạch.
+                </p>
+
+                <div class="row g-2 align-items-end mb-2">
+                    <div class="col-12 col-sm-4">
+                        <label class="form-label small fw-semibold mb-1">Ngày giao mới <span class="text-danger">*</span></label>
+                        <input type="date" class="form-control form-control-sm" id="adminNewDeliveryDate" value="${currentDateValue}" required>
+                    </div>
+                    <div class="col-12 col-sm-4">
+                        <label class="form-label small fw-semibold mb-1">Khung giờ giao mới <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control form-control-sm" id="adminNewDeliveryTime" value="${currentTimeValue}" placeholder="Ví dụ: Trước 18:00 hoặc 15:30" required>
+                    </div>
+                    <div class="col-12 col-sm-4">
+                        <button type="button" class="btn btn-warning btn-sm w-100 fw-bold py-1" onclick="adminLuuThoiGianGiao('${order.id}')">
+                            <i class="fa-solid fa-floppy-disk me-1"></i> Lưu Thời Gian Giao Mới
+                        </button>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label small fw-semibold mb-1">Lý do thay đổi thời gian giao <span class="text-danger">*</span></label>
+                        <textarea class="form-control form-control-sm" id="adminDeliveryReason" rows="2" placeholder="Ví dụ: Khách hẹn dời lại sau giờ làm, thời tiết mưa lớn, điều phối tuyến xe..." required></textarea>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // Bảng lịch sử thay đổi thời gian giao hàng
+    let deliveryHistoryHtml = '';
+    if (order.deliveryHistory && Array.isArray(order.deliveryHistory) && order.deliveryHistory.length > 0) {
+        deliveryHistoryHtml = `
+            <div class="mt-4">
+                <h6 class="fw-bold text-dark mb-2">
+                    <i class="fa-solid fa-clock-rotate-left text-primary me-1"></i> Lịch Sử Thay Đổi Thời Gian Giao Hàng (${order.deliveryHistory.length} lần)
+                </h6>
+                <div class="table-responsive border rounded bg-white">
+                    <table class="table table-sm align-middle mb-0 small">
+                        <thead class="table-light">
+                            <tr>
+                                <th>#</th>
+                                <th>Thời Gian Cũ</th>
+                                <th>Thời Gian Mới</th>
+                                <th>Lý Do Thay Đổi</th>
+                                <th>Thời Điểm Cập Nhật</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${order.deliveryHistory.map((h, idx) => `
+                                <tr>
+                                    <td class="fw-bold text-muted">${idx + 1}</td>
+                                    <td><span class="text-secondary">${h.oldDate || ''} (${h.oldTime || ''})</span></td>
+                                    <td><strong class="text-danger">${h.newDate || ''} (${h.newTime || ''})</strong></td>
+                                    <td><span class="fw-semibold text-dark">${h.reason || 'Điều chỉnh lịch giao'}</span></td>
+                                    <td class="text-muted">${h.changedAt || ''}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+    }
+
+    let cancelAlertHtml = '';
+    if (order.status === 'cancelled') {
+        cancelAlertHtml = `
+            <div class="col-12">
+                <div class="alert alert-danger py-2 px-3 small mb-0 rounded-3">
+                    <i class="fa-solid fa-ban me-1 text-danger fs-6 align-middle"></i>
+                    <strong>ĐƠN HÀNG ĐÃ BỊ HỦY</strong>
+                    ${order.cancelReason ? `<div class="mt-1"><strong>Lý do hủy:</strong> ${order.cancelReason}</div>` : ''}
+                    ${order.cancelledAt ? `<div class="text-muted"><strong>Thời điểm hủy:</strong> ${order.cancelledAt}</div>` : ''}
+                </div>
+            </div>
+        `;
+    }
+
+    bodyEl.innerHTML = `
+        <div class="row g-4">
+            ${cancelAlertHtml}
+            <!-- Cột trái: Thông tin nhận hàng & Vận chuyển -->
+            <div class="col-12 col-lg-6">
+                <div class="card border-0 bg-light p-3 rounded-3 h-100">
+                    <h6 class="fw-bold text-dark border-bottom pb-2 mb-3">
+                        <i class="fa-solid fa-user text-primary me-1"></i> Thông Tin Khách Hàng & Giao Hàng
+                    </h6>
+                    <div class="row g-2 small">
+                        <div class="col-4 text-muted">Họ và tên:</div>
+                        <div class="col-8 fw-bold text-dark">${order.customer || '---'}</div>
+
+                        <div class="col-4 text-muted">Số điện thoại:</div>
+                        <div class="col-8 text-primary font-monospace fw-bold">${order.phone || '---'}</div>
+
+                        <div class="col-4 text-muted">Địa chỉ nhận hàng:</div>
+                        <div class="col-8 text-dark">${order.address || '---'}</div>
+
+                        <div class="col-4 text-muted">Phương thức TT:</div>
+                        <div class="col-8 text-dark">${order.paymentMethod || 'COD'}</div>
+
+                        <div class="col-4 text-muted">Ghi chú của khách:</div>
+                        <div class="col-8 fst-italic">${order.note || 'Không có ghi chú'}</div>
+                    </div>
+
+                    <h6 class="fw-bold text-dark border-bottom pb-2 mb-3 mt-4">
+                        <i class="fa-solid fa-truck-fast text-success me-1"></i> Cấu Hình Vận Chuyển Của Đơn
+                    </h6>
+                    <div class="row g-2 small">
+                        <div class="col-5 text-muted">Hình thức vận chuyển:</div>
+                        <div class="col-7">${shipBadge}</div>
+
+                        <div class="col-5 text-muted">Thời điểm đặt hàng:</div>
+                        <div class="col-7 text-dark fw-bold">${order.orderDate || ''} ${order.orderTime || ''}</div>
+
+                        <div class="col-5 text-muted">Thời gian giao dự kiến:</div>
+                        <div class="col-7 text-danger fw-bold fs-6">${order.estimatedDeliveryDate || 'Trong ngày'} (${order.estimatedDeliveryTime || 'Trước 18:00'})</div>
+
+                        <div class="col-5 text-muted">Phí vận chuyển:</div>
+                        <div class="col-7 fw-bold text-dark">${formatCurrency(order.shippingFee || 30000)}</div>
+
+                        <div class="col-5 text-muted">Thời gian giao thực tế:</div>
+                        <div class="col-7">${order.actualDeliveryTime ? `<b class="text-success"><i class="fa-solid fa-circle-check me-1"></i>${order.actualDeliveryTime}</b>` : '<span class="text-muted fst-italic">Chưa hoàn tất giao hàng</span>'}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cột phải: Chi tiết đơn hàng & Cập nhật trạng thái -->
+            <div class="col-12 col-lg-6">
+                <div class="card border-0 bg-light p-3 rounded-3 h-100">
+                    <h6 class="fw-bold text-dark border-bottom pb-2 mb-3">
+                        <i class="fa-solid fa-box text-primary me-1"></i> Danh Sách Sản Phẩm Trong Đơn
+                    </h6>
+                    <div class="table-responsive border rounded bg-white mb-3" style="max-height: 200px; overflow-y: auto;">
+                        <table class="table table-sm align-middle mb-0">
+                            <thead class="table-light small">
+                                <tr>
+                                    <th colspan="2">Sản phẩm</th>
+                                    <th class="text-center">SL</th>
+                                    <th class="text-end">Đơn giá</th>
+                                    <th class="text-end">Thành tiền</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${itemsHtml}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="bg-white p-3 rounded border small mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-muted">Phí vận chuyển:</span>
+                            <span class="fw-bold text-dark">${formatCurrency(order.shippingFee || 30000)}</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-muted">Giảm giá:</span>
+                            <span class="text-success fw-bold">- ${formatCurrency(order.discount || 0)}</span>
+                        </div>
+                        <div class="d-flex justify-content-between border-top pt-2">
+                            <span class="fw-bold fs-6 text-dark">Tổng thanh toán:</span>
+                            <span class="fw-bold fs-5 text-danger">${formatCurrency(order.total || 0)}</span>
+                        </div>
+                    </div>
+
+                    <!-- Khu vực cập nhật trạng thái đơn hàng -->
+                    <div class="p-3 bg-white border rounded">
+                        <label class="form-label small fw-bold mb-1">Cập nhật trạng thái đơn hàng:</label>
+                        <div class="d-flex gap-2">
+                            <select class="form-select form-select-sm" id="adminModalOrderStatus">
+                                <option value="pending" ${order.status === 'pending' ? 'selected' : ''}>Chờ xác nhận</option>
+                                <option value="confirmed" ${order.status === 'confirmed' ? 'selected' : ''}>Đã xác nhận</option>
+                                <option value="processing" ${order.status === 'processing' ? 'selected' : ''}>Đang chuẩn bị hàng</option>
+                                <option value="shipping" ${order.status === 'shipping' ? 'selected' : ''}>Đang vận chuyển</option>
+                                <option value="completed" ${order.status === 'completed' ? 'selected' : ''}>Đã giao hàng (Hoàn tất)</option>
+                                <option value="cancelled" ${order.status === 'cancelled' ? 'selected' : ''}>Đã hủy đơn</option>
+                            </select>
+                            <button type="button" class="btn btn-primary btn-sm fw-bold px-3 text-nowrap" onclick="adminCapNhatTrangThaiDonHang('${order.id}')">
+                                Cập nhật
+                            </button>
+                        </div>
+                        <div class="form-text small mt-1">Khi chuyển sang "Đã giao hàng", hệ thống tự động lưu thời gian giao hàng thực tế.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Khối cập nhật thời gian giao hàng & Lịch sử -->
+            <div class="col-12">
+                ${deliveryUpdateFormHtml}
+                ${deliveryHistoryHtml}
+            </div>
+        </div>
+    `;
+
+    // Mở modal Bootstrap
+    const modalEl = document.getElementById('adminOrderDetailModal');
+    if (modalEl && window.bootstrap) {
+        const modal = new bootstrap.Modal(modalEl);
+        modal.show();
+    }
+}
+
+// Admin lưu thay đổi thời gian giao hàng kèm lý do bắt buộc (ADMIN ONLY)
+function adminLuuThoiGianGiao(orderId) {
+    if (typeof kiemTraQuyenAdmin === 'function' && !kiemTraQuyenAdmin()) {
+        alert('Cảnh báo: Bạn không có quyền thay đổi thời gian giao hàng! Chức năng chỉ dành cho Admin.');
+        return;
+    }
+
+    const orders = typeof getStoredOrders === 'function' ? getStoredOrders() : [];
+    const order = orders.find(o => String(o.id) === String(orderId));
+    if (!order) return;
+
+    // Không cho phép chỉnh sửa nếu đơn đã hoàn thành
+    if (order.status === 'completed') {
+        alert('Đơn hàng đã hoàn thành, không thể thay đổi thời gian giao!');
+        return;
+    }
+
+    const dateInput = document.getElementById('adminNewDeliveryDate');
+    const timeInput = document.getElementById('adminNewDeliveryTime');
+    const reasonInput = document.getElementById('adminDeliveryReason');
+
+    if (!dateInput || !timeInput || !reasonInput) return;
+
+    const rawDate = dateInput.value.trim();
+    const newTime = timeInput.value.trim();
+    const reason = reasonInput.value.trim();
+
+    if (!rawDate) {
+        alert('Vui lòng chọn Ngày giao mới!');
+        dateInput.focus();
+        return;
+    }
+
+    if (!newTime) {
+        alert('Vui lòng nhập Khung giờ giao mới!');
+        timeInput.focus();
+        return;
+    }
+
+    if (!reason) {
+        alert('Vui lòng nhập Lý do thay đổi thời gian giao hàng (bắt buộc)!');
+        reasonInput.focus();
+        return;
+    }
+
+    const newDateVN = chuyenSangDMY(rawDate);
+    const oldDateVN = order.estimatedDeliveryDate || 'Chưa thiết lập';
+    const oldTimeVN = order.estimatedDeliveryTime || 'Chưa thiết lập';
+
+    // Khởi tạo mảng deliveryHistory nếu chưa có
+    if (!order.deliveryHistory || !Array.isArray(order.deliveryHistory)) {
+        order.deliveryHistory = [];
+    }
+
+    const now = new Date();
+    const changedAtText = now.toLocaleDateString('vi-VN') + ' ' + now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+
+    // Ghi lại lịch sử thay đổi
+    order.deliveryHistory.push({
+        oldDate: oldDateVN,
+        oldTime: oldTimeVN,
+        newDate: newDateVN,
+        newTime: newTime,
+        reason: reason,
+        changedAt: changedAtText
+    });
+
+    // Cập nhật thông tin giao mới vào đơn hàng
+    order.estimatedDeliveryDate = newDateVN;
+    order.estimatedDeliveryTime = newTime;
+
+    // Lưu lại vào localStorage
+    saveStoredOrders(orders);
+
+    showToast(`Đã cập nhật thời gian giao hàng cho đơn #${order.id} thành "${newDateVN} (${newTime})"!`, 'success');
+
+    // Render lại Modal và Bảng quản lý
+    openAdminOrderDetailModal(order.id);
+    renderAdminOrdersData();
+}
+
+// Admin cập nhật trạng thái đơn hàng (ADMIN ONLY)
+function adminCapNhatTrangThaiDonHang(orderId) {
+    if (typeof kiemTraQuyenAdmin === 'function' && !kiemTraQuyenAdmin()) {
+        alert('Cảnh báo: Bạn không có quyền cập nhật trạng thái đơn hàng! Chức năng chỉ dành cho Admin.');
+        return;
+    }
+
+    const orders = typeof getStoredOrders === 'function' ? getStoredOrders() : [];
+    const order = orders.find(o => String(o.id) === String(orderId));
+    if (!order) return;
+
+    const selectEl = document.getElementById('adminModalOrderStatus');
+    if (!selectEl) return;
+
+    const newStatus = selectEl.value;
+    const statusMap = {
+        pending: 'Chờ xác nhận',
+        confirmed: 'Đã xác nhận',
+        processing: 'Đang chuẩn bị hàng',
+        shipping: 'Đang vận chuyển',
+        completed: 'Đã giao hàng',
+        cancelled: 'Đã hủy'
+    };
+
+    order.status = newStatus;
+    order.statusText = statusMap[newStatus] || newStatus;
+
+    // Nếu đơn hàng chuyển sang Đã giao hàng (completed) và chưa có thời gian giao thực tế
+    if (newStatus === 'completed' && !order.actualDeliveryTime) {
+        const now = new Date();
+        order.actualDeliveryTime = now.toLocaleDateString('vi-VN') + ' ' + now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    saveStoredOrders(orders);
+    showToast(`Đã cập nhật trạng thái đơn hàng #${order.id} sang "${order.statusText}"!`, 'success');
+
+    openAdminOrderDetailModal(order.id);
+    renderAdminOrdersData();
 }
 
 // Render khách hàng

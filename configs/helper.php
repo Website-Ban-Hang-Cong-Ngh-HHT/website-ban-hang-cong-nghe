@@ -20,7 +20,11 @@ if (!function_exists('e')) {
 if (!function_exists('redirect')) {
     function redirect(string $url): void
     {
-        header('Location: ' . $url);
+        if (!headers_sent()) {
+            header('Location: ' . $url);
+            exit;
+        }
+        echo '<script>window.location.href = ' . json_encode($url) . ';</script>';
         exit;
     }
 }
