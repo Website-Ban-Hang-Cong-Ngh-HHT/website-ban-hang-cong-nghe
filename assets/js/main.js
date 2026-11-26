@@ -1013,6 +1013,18 @@ function changeCartQuantity(cartKey, delta) {
     saveCart(cart);
 }
 
+function toggleCartItem(cartKey, checked) {
+    const cart = getCart();
+    const item = cart.find(i => i.cartKey === cartKey);
+    if (!item) return;
+    item.selected = checked;
+    saveCart(cart);
+}
+
+function toggleSelectAllCart(checked) {
+    saveCart(getCart().map(item => ({ ...item, selected: checked })));
+}
+
 // Xóa 1 phiên bản khỏi giỏ hàng
 function removeCartItem(cartKey) {
     let cart = getCart();
@@ -1054,9 +1066,10 @@ function renderCartModal(cart) {
     let total = 0;
     cartContainer.innerHTML = cart.map(item => {
         const itemTotal = item.price * item.quantity;
-        total += itemTotal;
+        if (item.selected !== false) total += itemTotal;
         return `
             <div class="d-flex align-items-center justify-content-between p-2 border-bottom">
+                <input class="form-check-input me-2" type="checkbox" aria-label="Chọn ${item.name}" ${item.selected !== false ? 'checked' : ''} onchange="toggleCartItem('${item.cartKey}', this.checked)">
                 <img src="${item.image}" alt="${item.name}" class="rounded me-3" style="width: 55px; height: 55px; object-fit: contain;" onerror="handleImageError(this, '${item.name.replace(/'/g, "\\'")}')">
                 <div class="flex-grow-1 me-2">
                     <h6 class="mb-1 text-truncate" style="max-width: 200px;" title="${item.name}">${item.name}</h6>
@@ -1081,6 +1094,9 @@ function renderCartModal(cart) {
             </div>
         `;
     }).join('');
+
+    const allSelected = cart.every(item => item.selected !== false);
+    cartContainer.insertAdjacentHTML('afterbegin', `<div class="form-check mb-2 ps-4"><input class="form-check-input" type="checkbox" id="cartSelectAll" ${allSelected ? 'checked' : ''} onchange="toggleSelectAllCart(this.checked)"><label class="form-check-label fw-semibold" for="cartSelectAll">Chọn tất cả</label></div>`);
 
     if (cartTotalPrice) cartTotalPrice.innerText = formatCurrency(total);
     if (cartActionFooter) cartActionFooter.style.display = 'flex';
@@ -1213,7 +1229,7 @@ function renderOrderHistory() {
                 <span class="badge ${statusClass}">${escapeOrderHtml(order.statusText || 'Chờ xác nhận')}</span>
             </div>
             ${items || `<div class="small text-muted py-2">${escapeOrderHtml(order.productSummary)}</div>`}
-            <div class="small text-muted border-top pt-2 mt-1"><div><strong>Thanh toán:</strong> ${escapeOrderHtml(order.paymentMethod || 'COD (Thanh toán khi nhận hàng)')}</div><div class="mt-1"><strong>Địa chỉ nhận hàng:</strong> ${escapeOrderHtml(order.address || 'Chưa cập nhật')}</div>${order.note ? `<div class="mt-1"><strong>Ghi chú:</strong> ${escapeOrderHtml(order.note)}</div>` : ''}</div>
+            <div class="small text-muted border-top pt-2 mt-1"><div><strong>Hình thức nhận:</strong> ${escapeOrderHtml(order.fulfillmentMethodText || (order.fulfillmentMethod === 'pickup' ? 'Nhận tại cửa hàng' : 'Giao tận nơi'))}</div><div><strong>Thanh toán:</strong> ${escapeOrderHtml(order.paymentMethod || 'COD (Thanh toán khi nhận hàng)')}</div><div class="mt-1"><strong>Địa chỉ nhận hàng:</strong> ${escapeOrderHtml(order.address || 'Chưa cập nhật')}</div>${order.note ? `<div class="mt-1"><strong>Ghi chú:</strong> ${escapeOrderHtml(order.note)}</div>` : ''}</div>
             <div class="d-flex justify-content-between border-top pt-2 mt-1 fw-bold"><span>Tổng thanh toán</span><span class="text-danger">${formatCurrency(Number(order.total) || 0)}</span></div>
             ${order.status === 'pending' ? `<div class="text-end mt-3"><button type="button" class="btn btn-outline-danger btn-sm" onclick="cancelCustomerOrder('${escapeOrderHtml(order.id)}')"><i class="fa-solid fa-xmark me-1"></i>Hủy đơn</button></div>` : ''}
         </article>`;
@@ -1231,8 +1247,8 @@ function saveStoredOrders(orders) {
 // Chuyển hướng từ modal giỏ hàng sang trang thanh toán riêng biệt
 function goToCheckout() {
     const cart = getCart();
-    if (!cart || cart.length === 0) {
-        showToast('Giỏ hàng của bạn đang trống! Vui lòng chọn sản phẩm trước khi thanh toán.', 'warning');
+    if (!cart || !cart.some(item => item.selected !== false)) {
+        showToast('Vui lòng chọn ít nhất một sản phẩm để thanh toán.', 'warning');
         return;
     }
 

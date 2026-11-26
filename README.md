@@ -43,6 +43,7 @@ Website thương mại điện tử chuyên bán các sản phẩm công nghệ 
 - CSDL `hhta` được tạo và quản lý **trực tiếp bằng MySQL** (project không chứa file `.sql` nào).
 - Cấu hình kết nối nằm trong `configs/env.php` (`DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USERNAME`, `DB_PASSWORD`).
 - Bảng `users` gồm: `id`, `full_name`, `username`, `email`, `phone`, `password`, `role`, `created_at`, `updated_at`.
+- Tạo bảng đơn hàng bằng cách chạy file `database/orders.sql` trên CSDL `hhta`; bảng này lưu `note`, `fulfillment_method` và danh sách mặt hàng JSON.
 - Tài khoản Admin mặc định: **`admin`** / **`123456`**.
 - Mật khẩu đang lưu dạng **chữ/số bình thường** vì `PASSWORD_MODE = 'plain'` trong `configs/env.php` (dễ quan sát trong MySQL, phù hợp học tập/demo).
 - Khi triển khai thật, đổi `PASSWORD_MODE` thành `'hash'` để bật mã hoá bcrypt. Code hỗ trợ đăng nhập cho cả tài khoản cũ (hash) và mới (plain).
