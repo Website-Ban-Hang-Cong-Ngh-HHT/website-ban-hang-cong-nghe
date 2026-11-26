@@ -1733,5 +1733,224 @@ a:hover {
     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
 }
 
+/* ============================================================= */
+/* GIAO DIỆN THANH TOÁN PHONG CÁCH SHOPEE (SHOPEE CHECKOUT CSS)   */
+/* ============================================================= */
+.shopee-checkout-bg {
+    background-color: #f5f5f5;
+    min-height: 80vh;
+}
+
+.shopee-container {
+    max-width: 1150px;
+    margin: 0 auto;
+}
+
+/* Khối Card kiểu Shopee */
+.shopee-card {
+    background-color: #ffffff;
+    border-radius: 3px;
+    box-shadow: 0 1px 1px 0 rgba(0, 0, 0, 0.05);
+    margin-bottom: 14px;
+    border: 1px solid #ececec;
+}
+
+/* Viền phong bì thư đặc trưng của Shopee ở đầu khối Địa chỉ */
+.shopee-address-border {
+    height: 3px;
+    width: 100%;
+    background-position-x: -30px;
+    background-size: 116px 3px;
+    background-image: repeating-linear-gradient(45deg, #6c8aed, #6c8aed 33px, transparent 0, transparent 41px, #f18d9b 0, #f18d9b 74px, transparent 0, transparent 82px);
+}
+
+/* Chữ và màu sắc Shopee */
+.text-shopee {
+    color: #ee4d2d !important;
+}
+
+.bg-shopee {
+    background-color: #ee4d2d !important;
+    color: #ffffff !important;
+}
+
+/* Nút đặt hàng Shopee */
+.btn-shopee {
+    background-color: #ee4d2d;
+    color: #ffffff;
+    border: none;
+    border-radius: 2px;
+    padding: 12px 36px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.btn-shopee:hover {
+    background-color: #d73211;
+    color: #ffffff;
+}
+
+.btn-shopee-outline {
+    background-color: #ffffff;
+    color: #555555;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    border-radius: 2px;
+    padding: 8px 16px;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.btn-shopee-outline:hover {
+    background-color: #f8f8f8;
+    border-color: rgba(0, 0, 0, 0.25);
+}
+
+/* Nhãn Mặc định kiểu Shopee */
+.badge-shopee-default {
+    border: 1px solid #ee4d2d;
+    color: #ee4d2d;
+    background-color: transparent;
+    font-size: 11px;
+    padding: 2px 6px;
+    border-radius: 2px;
+    font-weight: 500;
+}
+
+/* Nhãn Mall / Official kiểu Shopee */
+.badge-shopee-mall {
+    background-color: #d0011b;
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 1px 4px;
+    border-radius: 2px;
+}
+
+/* Tiêu đề bảng sản phẩm Shopee */
+.shopee-table-header {
+    background-color: #ffffff;
+    border-bottom: 1px solid #f2f2f2;
+    padding: 14px 20px;
+    font-size: 14px;
+    color: #888888;
+}
+
+/* Từng dòng sản phẩm */
+.shopee-product-row {
+    padding: 16px 20px;
+    border-bottom: 1px dashed #e8e8e8;
+    align-items: center;
+}
+
+.shopee-product-img {
+    width: 60px;
+    height: 60px;
+    object-fit: contain;
+    border: 1px solid #e8e8e8;
+    border-radius: 2px;
+    background-color: #ffffff;
+}
+
+/* Khối phương thức thanh toán kiểu Shopee */
+.shopee-payment-opt {
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 2px;
+    padding: 8px 16px;
+    margin-right: 10px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    display: inline-block;
+    user-select: none;
+    font-size: 14px;
+    background-color: #ffffff;
+}
+
+.shopee-payment-opt.active {
+    border-color: #ee4d2d;
+    color: #ee4d2d;
+    background-color: #fff9f8;
+    position: relative;
+}
+
+/* Dấu tích góc của option được chọn */
+.shopee-payment-opt.active::after {
+    content: "✓";
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 14px;
+    height: 14px;
+    background-color: #ee4d2d;
+    color: #ffffff;
+    font-size: 10px;
+    line-height: 14px;
+    text-align: center;
+    border-top-left-radius: 4px;
+}
+
+/* Modal đơn giản dành cho Quản lý địa chỉ & Chọn Voucher */
+.shopee-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.45);
+    z-index: 1090;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+}
+
+.shopee-modal-dialog {
+    background-color: #ffffff;
+    border-radius: 4px;
+    width: 100%;
+    max-width: 580px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    overflow: hidden;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.shopee-modal-header {
+    padding: 16px 24px;
+    border-bottom: 1px solid #f0f0f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.shopee-modal-body {
+    padding: 20px 24px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.shopee-modal-footer {
+    padding: 14px 24px;
+    border-top: 1px solid #f0f0f0;
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    background-color: #fafafa;
+}
+
+/* Thẻ từng địa chỉ trong danh sách */
+.shopee-address-item {
+    padding: 14px;
+    border-bottom: 1px solid #f0f0f0;
+    display: flex;
+    gap: 12px;
+}
+
+.shopee-address-item:last-child {
+    border-bottom: none;
+}
+
 
 

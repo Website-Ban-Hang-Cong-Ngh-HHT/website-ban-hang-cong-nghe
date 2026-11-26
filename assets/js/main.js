@@ -1872,14 +1872,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // 3. Cập nhật giao diện giỏ hàng
     updateCartUI();
 
-    // 4. Khởi tạo các trang thanh toán theo URL
-    if (window.location.search.includes('action=checkout-confirm')) {
-        if (typeof initCheckoutConfirmPage === 'function') {
-            initCheckoutConfirmPage();
-        }
-    } else if (window.location.search.includes('action=checkout')) {
-        if (typeof initCheckoutShippingPage === 'function') {
-            initCheckoutShippingPage();
+    // 4. Khởi tạo trang thanh toán nếu đang ở URL checkout
+    if (window.location.search.includes('action=checkout')) {
+        if (typeof khoiTaoTrangThanhToan === 'function') {
+            khoiTaoTrangThanhToan();
         }
     }
 

@@ -38,19 +38,18 @@ class HomeController
         require_once PATH_VIEW . 'main.php';
     }
 
-    // 3. Trang thanh toán bước 1: Thông tin nhận hàng (Checkout Step 1)
+    // 3. Trang thanh toán Shopee (Shopee Checkout)
     public function checkout()
     {
-        $title = 'Thông Tin Nhận Hàng - TECH STORE';
+        $title = 'Thanh Toán - TECH STORE';
         $view = 'checkout';
         require_once PATH_VIEW . 'main.php';
     }
 
-    // 4. Trang thanh toán bước 2: Xác nhận & Xử lý đơn hàng (Checkout Step 2)
+    // 4. Chuyển hướng về trang thanh toán chính
     public function checkoutConfirm()
     {
-        $title = 'Xác Nhận Đơn Hàng - TECH STORE';
-        $view = 'checkout_confirm';
-        require_once PATH_VIEW . 'main.php';
+        header('Location: index.php?action=checkout');
+        exit;
     }
 }

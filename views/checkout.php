@@ -1,385 +1,1154 @@
-<!-- ========================================================= -->
-<!-- TRANG 1: THÔNG TIN NHẬN HÀNG (views/checkout.php)         -->
-<!-- ========================================================= -->
+<!-- ================================================================= -->
+<!-- TRANG THANH TOÁN GIAO DIỆN SHOPEE (views/checkout.php)             -->
+<!-- CODE DÀNH CHO SINH VIÊN MỚI HỌC FRONT-END: HTML, CSS, JS CƠ BẢN    -->
+<!-- ================================================================= -->
 
-<div class="container py-4 checkout-page-container" style="max-width: 860px;">
+<div class="shopee-checkout-bg py-4">
+    <div class="container shopee-container">
 
-    <!-- 1. TIÊU ĐỀ VÀ THANH TIẾN TRÌNH (BƯỚC 2: THÔNG TIN NHẬN HÀNG) -->
-    <div class="text-center mb-4">
-        <h2 class="fw-bold text-dark mb-2">
-            <i class="fa-solid fa-location-dot text-primary me-2"></i>Thông Tin Nhận Hàng
-        </h2>
-        <p class="text-muted small mb-4">Bước 2: Vui lòng nhập địa chỉ và thông tin nhận hàng để TECH STORE chuẩn bị đơn hàng cho bạn</p>
-
-        <!-- Thanh tiến trình 3 bước: Giỏ hàng -> Thông tin nhận hàng -> Xác nhận đơn hàng -->
-        <div class="checkout-steps-wrapper">
-            <div class="checkout-step completed">
-                <div class="step-circle"><i class="fa-solid fa-check"></i></div>
-                <div class="step-label">1. Giỏ hàng</div>
+        <!-- ========================================================= -->
+        <!-- PHẦN 0: KHI GIỎ HÀNG TRỐNG (ẨN MẶC ĐỊNH, HIỆN KHI CART = 0) -->
+        <!-- ========================================================= -->
+        <div id="khungGioHangTrong" class="shopee-card p-5 text-center" style="display: none;">
+            <div class="mb-3">
+                <i class="fa-solid fa-cart-shopping text-muted" style="font-size: 4rem;"></i>
             </div>
-            <div class="step-line active"></div>
-            <div class="checkout-step active" id="stepIndicatorInfo">
-                <div class="step-circle">2</div>
-                <div class="step-label">2. Thông tin nhận hàng</div>
-            </div>
-            <div class="step-line" id="stepLineFinal"></div>
-            <div class="checkout-step" id="stepIndicatorComplete">
-                <div class="step-circle">3</div>
-                <div class="step-label">3. Xác nhận đơn hàng</div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 2. KHỐI KHI GIỎ HÀNG TRỐNG (ẨN MẶC ĐỊNH, HIỂN THỊ KHI CART = 0) -->
-    <div id="checkoutEmptySection" class="card border-0 shadow-sm rounded-4 p-5 text-center my-4" style="display: none;">
-        <div class="cart-empty-icon mx-auto mb-3">
-            <i class="fa-solid fa-cart-shopping"></i>
-        </div>
-        <h4 class="fw-bold text-dark mb-2">Giỏ hàng của bạn đang trống!</h4>
-        <p class="text-muted mb-4" style="max-width: 500px; margin: 0 auto;">
-            Bạn chưa có sản phẩm nào trong giỏ hàng. Vui lòng quay lại cửa hàng để chọn các sản phẩm công nghệ yêu thích trước khi điền thông tin nhận hàng.
-        </p>
-        <div>
-            <a href="index.php" class="btn btn-primary px-4 py-2 fw-bold">
+            <h4 class="fw-bold text-dark mb-2">Giỏ hàng của bạn đang trống!</h4>
+            <p class="text-muted mb-4">Không có sản phẩm nào để thanh toán. Vui lòng chọn sản phẩm vào giỏ hàng trước.</p>
+            <a href="index.php" class="btn btn-shopee px-4 py-2">
                 <i class="fa-solid fa-arrow-left me-2"></i> Quay lại mua sắm ngay
             </a>
         </div>
-    </div>
 
-    <!-- 3. KHỐI FORM THÔNG TIN NHẬN HÀNG (TRANG 1) -->
-    <div id="checkoutShippingContainer" class="card border-0 shadow-sm rounded-4 p-4 p-md-5 checkout-customer-card">
-        
-        <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-3 border-bottom gap-2">
-            <div>
-                <h4 class="fw-bold text-dark mb-1">
-                    <i class="fa-regular fa-address-card text-primary me-2"></i>Địa chỉ người nhận
-                </h4>
-                <div class="text-muted small">Thông tin này sẽ được dùng để in phiếu giao hàng và gửi thông báo đơn hàng</div>
+        <!-- ========================================================= -->
+        <!-- PHẦN 0B: MÀN HÌNH ĐẶT HÀNG THÀNH CÔNG (HIỆN KHI ĐẶT XONG) -->
+        <!-- ========================================================= -->
+        <div id="khungDatHangThanhCong" class="shopee-card p-4 p-md-5 text-center" style="display: none;">
+            <div class="mb-3">
+                <i class="fa-solid fa-circle-check text-success" style="font-size: 4.5rem;"></i>
             </div>
-            <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-2 fw-semibold">
-                * Các trường bắt buộc
-            </span>
+            <h3 class="fw-bold text-dark mb-2">ĐẶT HÀNG THÀNH CÔNG!</h3>
+            <p class="text-muted mb-4">
+                Cảm ơn bạn đã mua hàng tại <b>TECH STORE</b>. Đơn hàng của bạn đã được lưu vào hệ thống và đang được chuẩn bị giao đến bạn.
+            </p>
+
+            <!-- Hộp tóm tắt đơn hàng vừa đặt -->
+            <div class="card bg-light border-0 p-4 rounded-3 text-start mx-auto mb-4" style="max-width: 650px;">
+                <h6 class="fw-bold text-dark border-bottom pb-2 mb-3">
+                    <i class="fa-solid fa-receipt text-shopee me-2"></i> Chi Tiết Đơn Hàng Shopee
+                </h6>
+                <div class="row g-2 small">
+                    <div class="col-6 text-muted">Mã đơn hàng:</div>
+                    <div class="col-6 fw-bold text-shopee text-end" id="thanhCongMaDonHang">#DH---</div>
+
+                    <div class="col-6 text-muted">Người nhận hàng:</div>
+                    <div class="col-6 fw-bold text-dark text-end" id="thanhCongTenNguoiNhan">---</div>
+
+                    <div class="col-6 text-muted">Số điện thoại:</div>
+                    <div class="col-6 text-dark text-end" id="thanhCongSoDienThoai">---</div>
+
+                    <div class="col-6 text-muted">Địa chỉ nhận hàng:</div>
+                    <div class="col-6 text-dark text-end" id="thanhCongDiaChi">---</div>
+
+                    <div class="col-6 text-muted">Phương thức thanh toán:</div>
+                    <div class="col-6 text-dark text-end" id="thanhCongPhuongThuc">Thanh toán khi nhận hàng (COD)</div>
+
+                    <div class="col-6 text-muted">Phương thức vận chuyển:</div>
+                    <div class="col-6 text-success fw-bold text-end" id="thanhCongVanChuyen">Nhanh</div>
+
+                    <div class="col-6 text-muted">Tổng thanh toán:</div>
+                    <div class="col-6 h5 fw-bold text-shopee text-end mb-0" id="thanhCongTongTien">0 ₫</div>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-center gap-3">
+                <a href="index.php" class="btn btn-shopee px-4 py-2">
+                    <i class="fa-solid fa-store me-2"></i> Tiếp tục mua sắm
+                </a>
+            </div>
         </div>
 
-        <form id="checkoutShippingForm" novalidate onsubmit="event.preventDefault(); goToOrderReviewPage();">
-            <div class="row g-3">
-                
-                <!-- 1. Họ và tên người nhận -->
-                <div class="col-12 col-md-6">
-                    <label for="checkoutFullName" class="form-label fw-semibold small">
-                        Họ và tên người nhận <span class="text-danger">*</span>
-                    </label>
-                    <div class="input-group">
-                        <span class="input-group-text bg-light text-muted"><i class="fa-regular fa-user"></i></span>
-                        <input type="text" class="form-control" id="checkoutFullName" placeholder="Ví dụ: Nguyễn Văn An" required>
+        <!-- ========================================================= -->
+        <!-- KHỐI CHÍNH THANH TOÁN (TOÀN BỘ QUY TRÌNH THANH TOÁN SHOPEE) -->
+        <!-- ========================================================= -->
+        <div id="khungThanhToanChinh">
+
+            <!-- ===================================================== -->
+            <!-- 1. KHỐI ĐỊA CHỈ NHẬN HÀNG (CÓ VIỀN PHONG BÌ THƯ SHOPEE) -->
+            <!-- ===================================================== -->
+            <div class="shopee-card overflow-hidden">
+                <!-- Dải viền phong bì thư đặc trưng Shopee -->
+                <div class="shopee-address-border"></div>
+
+                <div class="p-3 p-md-4">
+                    <!-- Tiêu đề có icon định vị màu cam đỏ -->
+                    <div class="d-flex align-items-center mb-3">
+                        <i class="fa-solid fa-location-dot text-shopee fs-5 me-2"></i>
+                        <span class="fs-5 fw-bold text-shopee">Địa Chỉ Nhận Hàng</span>
                     </div>
-                    <div class="invalid-feedback" id="errorFullName">Vui lòng nhập họ và tên của người nhận hàng!</div>
-                </div>
 
-                <!-- 2. Số điện thoại -->
-                <div class="col-12 col-md-6">
-                    <label for="checkoutPhone" class="form-label fw-semibold small">
-                        Số điện thoại liên hệ <span class="text-danger">*</span>
-                    </label>
-                    <div class="input-group">
-                        <span class="input-group-text bg-light text-muted"><i class="fa-solid fa-phone"></i></span>
-                        <input type="tel" class="form-control" id="checkoutPhone" placeholder="Ví dụ: 0988123456" required>
-                    </div>
-                    <div class="invalid-feedback" id="errorPhone">Số điện thoại phải gồm 10 chữ số bắt đầu bằng số 0!</div>
-                </div>
+                    <!-- Nội dung địa chỉ đang được chọn -->
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
+                        <div class="flex-grow-1">
+                            <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+                                <span class="fw-bold text-dark fs-6" id="hienThiTenVaSdt">Nguyễn Văn An (+84) 988 123 456</span>
+                                <span class="badge-shopee-default" id="hienThiNhanMacDinh">Mặc định</span>
+                            </div>
+                            <div class="text-secondary small" id="hienThiDiaChiChiTiet">
+                                Số 123 Đường Cầu Giấy, Phường Dịch Vọng, Quận Cầu Giấy, Hà Nội
+                            </div>
+                        </div>
 
-                <!-- 3. Địa chỉ Email -->
-                <div class="col-12">
-                    <label for="checkoutEmail" class="form-label fw-semibold small">
-                        Địa chỉ Email <span class="text-muted fw-normal">(Không bắt buộc - dùng để nhận hóa đơn và thông báo hành trình đơn hàng)</span>
-                    </label>
-                    <div class="input-group">
-                        <span class="input-group-text bg-light text-muted"><i class="fa-regular fa-envelope"></i></span>
-                        <input type="email" class="form-control" id="checkoutEmail" placeholder="name@example.com">
-                    </div>
-                    <div class="invalid-feedback" id="errorEmail">Địa chỉ email không đúng định dạng (Ví dụ: name@example.com)!</div>
-                </div>
-
-                <!-- 4. Tỉnh / Thành phố -->
-                <div class="col-12 col-md-4">
-                    <label for="checkoutProvince" class="form-label fw-semibold small">
-                        Tỉnh / Thành phố <span class="text-danger">*</span>
-                    </label>
-                    <select class="form-select" id="checkoutProvince" required>
-                        <option value="">-- Chọn Tỉnh/Thành --</option>
-                        <option value="Hà Nội" selected>Hà Nội</option>
-                        <option value="TP. Hồ Chí Minh">TP. Hồ Chí Minh</option>
-                        <option value="Đà Nẵng">Đà Nẵng</option>
-                        <option value="Hải Phòng">Hải Phòng</option>
-                        <option value="Cần Thơ">Cần Thơ</option>
-                        <option value="Bình Dương">Bình Dương</option>
-                        <option value="Đồng Nai">Đồng Nai</option>
-                        <option value="Bắc Ninh">Bắc Ninh</option>
-                        <option value="Quảng Ninh">Quảng Ninh</option>
-                        <option value="Khánh Hòa">Khánh Hòa</option>
-                    </select>
-                    <div class="invalid-feedback" id="errorProvince">Vui lòng chọn Tỉnh/Thành phố nhận hàng!</div>
-                </div>
-
-                <!-- 5. Quận / Huyện -->
-                <div class="col-12 col-md-4">
-                    <label for="checkoutDistrict" class="form-label fw-semibold small">
-                        Quận / Huyện <span class="text-danger">*</span>
-                    </label>
-                    <input type="text" class="form-control" id="checkoutDistrict" placeholder="Ví dụ: Nam Từ Liêm" required value="Nam Từ Liêm">
-                    <div class="invalid-feedback" id="errorDistrict">Vui lòng nhập Quận/Huyện!</div>
-                </div>
-
-                <!-- 6. Phường / Xã -->
-                <div class="col-12 col-md-4">
-                    <label for="checkoutWard" class="form-label fw-semibold small">
-                        Phường / Xã <span class="text-danger">*</span>
-                    </label>
-                    <input type="text" class="form-control" id="checkoutWard" placeholder="Ví dụ: Phương Canh" required value="Phương Canh">
-                    <div class="invalid-feedback" id="errorWard">Vui lòng nhập Phường/Xã!</div>
-                </div>
-
-                <!-- 7. Địa chỉ cụ thể -->
-                <div class="col-12">
-                    <label class="form-label fw-semibold small d-block">Hình thức nhận hàng</label>
-                    <div class="d-flex flex-wrap gap-3">
-                        <div class="form-check"><input class="form-check-input" type="radio" name="fulfillmentMethod" id="fulfillmentDelivery" value="delivery" checked onchange="updateFulfillmentFields()"><label class="form-check-label" for="fulfillmentDelivery">Giao tận nơi</label></div>
-                        <div class="form-check"><input class="form-check-input" type="radio" name="fulfillmentMethod" id="fulfillmentPickup" value="pickup" onchange="updateFulfillmentFields()"><label class="form-check-label" for="fulfillmentPickup">Nhận tại cửa hàng</label></div>
+                        <!-- Nút Thay đổi địa chỉ -->
+                        <div>
+                            <button type="button" class="btn btn-link text-decoration-none fw-semibold text-primary p-0" onclick="moModalChonDiaChi()">
+                                Thay Đổi
+                            </button>
+                        </div>
                     </div>
                 </div>
-
-                <!-- 7. Địa chỉ cụ thể -->
-                <div class="col-12">
-                    <label for="checkoutAddress" class="form-label fw-semibold small">
-                        Địa chỉ nhận hàng chi tiết <span class="text-danger">*</span>
-                    </label>
-                    <div class="input-group">
-                        <span class="input-group-text bg-light text-muted"><i class="fa-solid fa-house"></i></span>
-                        <input type="text" class="form-control" id="checkoutAddress" placeholder="Số nhà, ngõ/ngách, tên đường, số tầng, tên tòa nhà..." required>
-                    </div>
-                    <div class="invalid-feedback" id="errorAddress">Vui lòng nhập địa chỉ cụ thể để shipper giao hàng!</div>
-                </div>
-
-                <!-- 8. Ghi chú đơn hàng -->
-                <div class="col-12">
-                    <label for="checkoutNote" class="form-label fw-semibold small">
-                        Ghi chú giao hàng <span class="text-muted fw-normal">(Tùy chọn)</span>
-                    </label>
-                    <textarea class="form-control" id="checkoutNote" rows="3" placeholder="Ví dụ: Giao giờ hành chính, gọi trước 15 phút, nhờ bảo vệ nhận giúp..."></textarea>
-                </div>
-
             </div>
 
-            <!-- Các nút điều hướng: Quay lại giỏ hàng và Tiếp tục -->
-            <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-3 pt-4 mt-4 border-top">
-                <a href="index.php" class="btn btn-outline-secondary px-4 py-2 fw-semibold w-100 w-sm-auto order-2 order-sm-1">
-                    <i class="fa-solid fa-arrow-left me-2"></i> Quay lại giỏ hàng
-                </a>
-                <button type="button" class="btn btn-primary px-5 py-2 fw-bold shadow-sm w-100 w-sm-auto order-1 order-sm-2" id="btnContinueCheckout" onclick="goToOrderReviewPage()">
-                    Tiếp tục sang kiểm tra đơn hàng <i class="fa-solid fa-arrow-right ms-2"></i>
+            <!-- ===================================================== -->
+            <!-- 2. KHỐI DANH SÁCH SẢN PHẨM THANH TOÁN (BẢNG KIỂU SHOPEE) -->
+            <!-- ===================================================== -->
+            <div class="shopee-card">
+                <!-- Tiêu đề các cột bảng sản phẩm Shopee -->
+                <div class="shopee-table-header d-none d-md-flex row align-items-center g-0">
+                    <div class="col-6 fw-bold text-dark">
+                        <i class="fa-solid fa-store text-shopee me-1"></i> Sản phẩm
+                    </div>
+                    <div class="col-2 text-center text-muted">Đơn giá</div>
+                    <div class="col-2 text-center text-muted">Số lượng</div>
+                    <div class="col-2 text-end text-muted">Thành tiền</div>
+                </div>
+
+                <!-- Tên Shop kiểu Shopee Mall -->
+                <div class="px-3 py-2 border-bottom bg-light d-flex align-items-center gap-2">
+                    <span class="badge-shopee-mall">Mall</span>
+                    <strong class="text-dark small">TECH STORE Official Store</strong>
+                    <span class="text-success small ms-2"><i class="fa-regular fa-comment-dots"></i> Chat ngay</span>
+                </div>
+
+                <!-- Danh sách các sản phẩm lấy từ Giỏ hàng (JavaScript chèn vào đây) -->
+                <div id="danhSachSanPhamContainer">
+                    <!-- JavaScript render các dòng sản phẩm vào đây -->
+                </div>
+
+                <!-- Lời nhắn cho người bán & Đơn vị vận chuyển -->
+                <div class="p-3 bg-light border-top">
+                    <div class="row g-3 align-items-center">
+                        <!-- Cột Lời nhắn cho Người bán -->
+                        <div class="col-12 col-md-5">
+                            <div class="d-flex align-items-center gap-2">
+                                <label for="inputLoiNhan" class="small text-muted text-nowrap mb-0">Lời nhắn:</label>
+                                <input type="text" id="inputLoiNhan" class="form-control form-control-sm bg-white" placeholder="Lưu ý cho Người bán (ví dụ: giao giờ hành chính)...">
+                            </div>
+                        </div>
+
+                        <!-- Cột Đơn vị vận chuyển -->
+                        <div class="col-12 col-md-7 border-start-md">
+                            <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="small text-success fw-bold text-nowrap">Đơn vị vận chuyển:</span>
+                                    <select id="selectVanChuyen" class="form-select form-select-sm w-auto" onchange="thayDoiVanChuyen()">
+                                        <option value="nhanh" selected>Nhanh (2-3 ngày) - 30.000 ₫</option>
+                                        <option value="hoatoc">Hỏa Tốc (2 giờ) - 50.000 ₫</option>
+                                        <option value="tietkiem">Tiết Kiệm (4-5 ngày) - 15.000 ₫</option>
+                                    </select>
+                                </div>
+                                <div class="fw-bold text-shopee text-nowrap" id="hienThiTienShip">
+                                    30.000 ₫
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tổng số tiền của đơn hàng nhỏ (Subtotal) -->
+                <div class="p-3 text-end border-top bg-white">
+                    <span class="text-muted small me-2">Tổng số tiền (<span id="hienThiTongSoLuong">0</span> sản phẩm):</span>
+                    <span class="h5 fw-bold text-shopee mb-0" id="hienThiTongTienHangNho">0 ₫</span>
+                </div>
+            </div>
+
+            <!-- ===================================================== -->
+            <!-- 3. KHỐI SHOPEE VOUCHER (MÃ GIẢM GIÁ)                   -->
+            <!-- ===================================================== -->
+            <div class="shopee-card p-3 p-md-4">
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-ticket text-shopee fs-5"></i>
+                        <span class="fw-bold text-dark fs-6">TECH STORE / Shopee Voucher</span>
+                    </div>
+
+                    <!-- Khu vực chọn Voucher hoặc nhập mã -->
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+                        <select id="selectVoucher" class="form-select form-select-sm w-auto" onchange="thayDoiVoucher()">
+                            <option value="">-- Không sử dụng voucher --</option>
+                            <option value="GIAM20K">GIAM20K - Giảm 20.000 ₫</option>
+                            <option value="GIAM10PT">GIAM10PT - Giảm 10% (Tối đa 50.000 ₫)</option>
+                            <option value="FREESHIP">FREESHIP - Miễn phí vận chuyển (Tối đa 30.000 ₫)</option>
+                        </select>
+                        <span class="badge bg-success-subtle text-success border border-success-subtle py-2 px-3 fw-semibold" id="hienThiNhanVoucher">
+                            Chưa chọn mã
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===================================================== -->
+            <!-- 4. KHỐI PHƯƠNG THỨC THANH TOÁN (COD / CHUYỂN KHOẢN)    -->
+            <!-- ===================================================== -->
+            <div class="shopee-card p-3 p-md-4">
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center border-bottom pb-3 mb-3 gap-2">
+                    <span class="fw-bold text-dark fs-6">Phương thức thanh toán</span>
+                    <span class="text-muted small">Quý khách chọn 1 trong các hình thức thanh toán bên dưới:</span>
+                </div>
+
+                <!-- Các nút bấm chọn phương thức thanh toán kiểu Shopee -->
+                <div class="d-flex flex-wrap gap-2 mb-3">
+                    <div class="shopee-payment-opt active" id="optCOD" onclick="chonPhuongThucThanhToan('COD')">
+                        <i class="fa-solid fa-hand-holding-dollar text-success me-1"></i> Thanh toán khi nhận hàng (COD)
+                    </div>
+                    <div class="shopee-payment-opt" id="optBank" onclick="chonPhuongThucThanhToan('BANK')">
+                        <i class="fa-solid fa-building-columns text-primary me-1"></i> Chuyển khoản ngân hàng (QR Code)
+                    </div>
+                </div>
+
+                <!-- Thông tin chi tiết khi chọn Chuyển khoản ngân hàng -->
+                <div id="khungThongTinNganHang" class="p-3 bg-light rounded-2 border" style="display: none;">
+                    <div class="fw-bold text-dark mb-2"><i class="fa-solid fa-qrcode text-primary me-2"></i>Thông tin chuyển khoản ngân hàng:</div>
+                    <div class="row g-2 small text-muted">
+                        <div class="col-12 col-md-4">Ngân hàng: <b class="text-dark">MB Bank (Quân Đội)</b></div>
+                        <div class="col-12 col-md-4">Số tài khoản: <b class="text-primary font-monospace fs-6">0988123456</b></div>
+                        <div class="col-12 col-md-4">Chủ tài khoản: <b class="text-dark">TECH STORE VIETNAM</b></div>
+                        <div class="col-12">Nội dung chuyển khoản: <span class="badge bg-warning text-dark font-monospace">TECHSTORE [Số điện thoại của bạn]</span></div>
+                    </div>
+                    <div class="text-muted small mt-2 fst-italic">
+                        * Nhân viên sẽ liên hệ xác nhận ngay sau khi nhận được chuyển khoản.
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===================================================== -->
+            <!-- 5. KHỐI TỔNG THANH TOÁN & NÚT ĐẶT HÀNG (SHOPEE STYLE)  -->
+            <!-- ===================================================== -->
+            <div class="shopee-card p-3 p-md-4">
+                <div class="row justify-content-end">
+                    <div class="col-12 col-md-6 col-lg-5">
+                        
+                        <div class="d-flex justify-content-between text-muted small mb-2">
+                            <span>Tổng tiền hàng:</span>
+                            <span class="text-dark fw-semibold" id="hienThiTongTienHang">0 ₫</span>
+                        </div>
+
+                        <div class="d-flex justify-content-between text-muted small mb-2">
+                            <span>Phí vận chuyển:</span>
+                            <span class="text-dark fw-semibold" id="hienThiTongPhiShip">0 ₫</span>
+                        </div>
+
+                        <div class="d-flex justify-content-between text-muted small mb-2" id="dongGiamGiaShip" style="display: none;">
+                            <span>Giảm giá phí vận chuyển:</span>
+                            <span class="text-success fw-semibold" id="hienThiGiamGiaShip">- 0 ₫</span>
+                        </div>
+
+                        <div class="d-flex justify-content-between text-muted small mb-3" id="dongGiamGiaVoucher" style="display: none;">
+                            <span>Tổng cộng Voucher giảm giá:</span>
+                            <span class="text-success fw-semibold" id="hienThiGiamGiaVoucher">- 0 ₫</span>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center border-top pt-3 mb-3">
+                            <span class="fw-bold text-dark fs-6">Tổng thanh toán:</span>
+                            <span class="h3 fw-bold text-shopee mb-0" id="hienThiTongThanhToan">0 ₫</span>
+                        </div>
+
+                        <div class="text-muted small mb-3 text-end" style="font-size: 12px;">
+                            Nhấn "Đặt hàng" đồng nghĩa với việc bạn đồng ý tuân theo <a href="javascript:void(0)" class="text-decoration-none">Điều khoản Shopee / TECH STORE</a>
+                        </div>
+
+                        <!-- Nút Đặt hàng Shopee lớn màu cam đỏ -->
+                        <div class="text-end">
+                            <button type="button" class="btn btn-shopee w-100 py-3 fs-5 shadow-sm" id="btnDatHang" onclick="xuLyDatHang()">
+                                Đặt hàng
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+        </div> <!-- Hết #khungThanhToanChinh -->
+
+    </div>
+</div>
+
+<!-- ================================================================= -->
+<!-- MODAL 1: QUẢN LÝ VÀ CHỌN ĐỊA CHỈ NHẬN HÀNG (POPUP SHOPEE)         -->
+<!-- ================================================================= -->
+<div id="modalChonDiaChi" class="shopee-modal-overlay" style="display: none;">
+    <div class="shopee-modal-dialog">
+        <div class="shopee-modal-header">
+            <h5 class="fw-bold text-dark mb-0"><i class="fa-solid fa-location-dot text-shopee me-2"></i>Địa chỉ của tôi</h5>
+            <button type="button" class="btn-close" onclick="dongModalChonDiaChi()"></button>
+        </div>
+
+        <div class="shopee-modal-body">
+            <!-- Nút thêm địa chỉ mới -->
+            <div class="mb-3 text-end">
+                <button type="button" class="btn btn-shopee-outline btn-sm" onclick="moFormThemDiaChi()">
+                    <i class="fa-solid fa-plus me-1 text-shopee"></i> Thêm Địa Chỉ Mới
                 </button>
             </div>
 
-        </form>
+            <!-- Danh sách các địa chỉ (JavaScript duyệt mảng và render vào đây) -->
+            <div id="danhSachDiaChiModalContainer">
+                <!-- Các thẻ địa chỉ sẽ được render vào đây -->
+            </div>
+        </div>
 
+        <div class="shopee-modal-footer">
+            <button type="button" class="btn btn-shopee-outline" onclick="dongModalChonDiaChi()">Hủy</button>
+            <button type="button" class="btn btn-shopee px-4" onclick="xacNhanChonDiaChi()">Xác nhận</button>
+        </div>
     </div>
-
 </div>
 
-<!-- SCRIPT XỬ LÝ CHO TRANG 1 (THÔNG TIN NHẬN HÀNG) -->
+<!-- ================================================================= -->
+<!-- MODAL 2: FORM THÊM MỚI VÀ CHỈNH SỬA ĐỊA CHỈ                       -->
+<!-- ================================================================= -->
+<div id="modalFormDiaChi" class="shopee-modal-overlay" style="display: none; z-index: 1095;">
+    <div class="shopee-modal-dialog">
+        <div class="shopee-modal-header">
+            <h5 class="fw-bold text-dark mb-0" id="tieuDeFormDiaChi">Địa chỉ mới</h5>
+            <button type="button" class="btn-close" onclick="dongFormDiaChi()"></button>
+        </div>
+
+        <div class="shopee-modal-body">
+            <form id="formThongTinDiaChi" onsubmit="event.preventDefault(); luuThongTinDiaChi();">
+                <!-- Ẩn id đang sửa (nếu là sửa) -->
+                <input type="hidden" id="inputDiaChiId" value="">
+
+                <div class="row g-3">
+                    <!-- Họ và tên -->
+                    <div class="col-12 col-sm-6">
+                        <label class="form-label small fw-semibold">Họ và tên <span class="text-danger">*</span></label>
+                        <input type="text" id="inputHoTen" class="form-control form-control-sm" placeholder="Ví dụ: Nguyễn Văn An" required>
+                    </div>
+
+                    <!-- Số điện thoại -->
+                    <div class="col-12 col-sm-6">
+                        <label class="form-label small fw-semibold">Số điện thoại <span class="text-danger">*</span></label>
+                        <input type="tel" id="inputSoDienThoai" class="form-control form-control-sm" placeholder="Ví dụ: 0988123456" required>
+                    </div>
+
+                    <!-- Tỉnh / Thành phố -->
+                    <div class="col-12 col-sm-4">
+                        <label class="form-label small fw-semibold">Tỉnh/Thành <span class="text-danger">*</span></label>
+                        <select id="selectTinhThanh" class="form-select form-select-sm" required>
+                            <option value="">-- Chọn --</option>
+                            <option value="Hà Nội" selected>Hà Nội</option>
+                            <option value="TP. Hồ Chí Minh">TP. Hồ Chí Minh</option>
+                            <option value="Đà Nẵng">Đà Nẵng</option>
+                            <option value="Hải Phòng">Hải Phòng</option>
+                            <option value="Cần Thơ">Cần Thơ</option>
+                            <option value="Bình Dương">Bình Dương</option>
+                            <option value="Đồng Nai">Đồng Nai</option>
+                            <option value="Bắc Ninh">Bắc Ninh</option>
+                            <option value="Quảng Ninh">Quảng Ninh</option>
+                        </select>
+                    </div>
+
+                    <!-- Quận / Huyện -->
+                    <div class="col-12 col-sm-4">
+                        <label class="form-label small fw-semibold">Quận/Huyện <span class="text-danger">*</span></label>
+                        <input type="text" id="inputQuanHuyen" class="form-control form-control-sm" placeholder="Ví dụ: Cầu Giấy" required value="Quận Cầu Giấy">
+                    </div>
+
+                    <!-- Phường / Xã -->
+                    <div class="col-12 col-sm-4">
+                        <label class="form-label small fw-semibold">Phường/Xã <span class="text-danger">*</span></label>
+                        <input type="text" id="inputPhuongXa" class="form-control form-control-sm" placeholder="Ví dụ: Dịch Vọng" required value="Phường Dịch Vọng">
+                    </div>
+
+                    <!-- Địa chỉ cụ thể -->
+                    <div class="col-12">
+                        <label class="form-label small fw-semibold">Địa chỉ cụ thể <span class="text-danger">*</span></label>
+                        <input type="text" id="inputDiaChiChiTiet" class="form-control form-control-sm" placeholder="Số nhà, ngõ/ngách, tên tòa nhà..." required>
+                    </div>
+
+                    <!-- Checkbox đặt làm mặc định -->
+                    <div class="col-12">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="checkDatMacDinh">
+                            <label class="form-check-label small" for="checkDatMacDinh">
+                                Thiết lập làm địa chỉ mặc định
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div class="shopee-modal-footer">
+            <button type="button" class="btn btn-shopee-outline" onclick="dongFormDiaChi()">Trở lại</button>
+            <button type="button" class="btn btn-shopee px-4" onclick="luuThongTinDiaChi()">Hoàn thành</button>
+        </div>
+    </div>
+</div>
+
+<!-- ================================================================= -->
+<!-- TOÀN BỘ CODE JAVASCRIPT CƠ BẢN DÀNH CHO SINH VIÊN FRONT-END       -->
+<!-- ================================================================= -->
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-    initCheckoutShippingPage();
+// ===================================================================
+// 1. CÁC BIẾN TOÀN CỤC VÀ DỮ LIỆU BAN ĐẦU
+// ===================================================================
+
+// Tên khóa lưu trong localStorage
+var KHOA_LUU_DIA_CHI = "shopee_danh_sach_dia_chi";
+
+// Danh sách địa chỉ mẫu ban đầu nếu máy khách chưa có lưu
+var danhSachDiaChiMacDinh = [
+    {
+        id: 1,
+        hoTen: "Nguyễn Văn An",
+        soDienThoai: "0988123456",
+        tinhThanh: "Hà Nội",
+        quanHuyen: "Quận Cầu Giấy",
+        phuongXa: "Phường Dịch Vọng",
+        diaChiChiTiet: "Số 123 Đường Cầu Giấy",
+        laMacDinh: true
+    },
+    {
+        id: 2,
+        hoTen: "Trần Thị Bình",
+        soDienThoai: "0912345678",
+        tinhThanh: "TP. Hồ Chí Minh",
+        quanHuyen: "Quận Bình Thạnh",
+        phuongXa: "Phường 22",
+        diaChiChiTiet: "Tòa nhà Landmark 81, 720A Điện Biên Phủ",
+        laMacDinh: false
+    }
+];
+
+// Biến lưu ID của địa chỉ đang được chọn để giao hàng
+var idDiaChiDangChon = null;
+
+// Biến lưu phương thức thanh toán đang chọn: "COD" hoặc "BANK"
+var phuongThucThanhToanHienTai = "COD";
+
+// Biến lưu thông tin phí vận chuyển hiện tại (mặc định 30.000₫)
+var phiVanChuyenHienTai = 30000;
+
+// Biến lưu thông tin voucher hiện tại
+var maVoucherHienTai = "";
+
+// ===================================================================
+// 2. KHI TẢI TRANG XONG THÌ CHẠY HÀM KHỞI TẠO (INIT)
+// ===================================================================
+document.addEventListener("DOMContentLoaded", function () {
+    khoiTaoTrangThanhToan();
 });
 
-// Khởi tạo và phục hồi dữ liệu thông tin nhận hàng
-function initCheckoutShippingPage() {
-    const cart = typeof getCart === 'function' ? getCart() : [];
-    const emptySection = document.getElementById('checkoutEmptySection');
-    const shippingContainer = document.getElementById('checkoutShippingContainer');
+function khoiTaoTrangThanhToan() {
+    // 1. Kiểm tra giỏ hàng có sản phẩm hay không
+    var cart = layGioHang();
+    var khungGioHangTrong = document.getElementById("khungGioHangTrong");
+    var khungThanhToanChinh = document.getElementById("khungThanhToanChinh");
 
-    // 1. Kiểm tra giỏ hàng: nếu trống thì hiển thị thông báo giỏ hàng trống
-    if (!cart || !cart.some(item => item.selected !== false)) {
-        if (emptySection) emptySection.style.display = 'block';
-        if (shippingContainer) shippingContainer.style.display = 'none';
+    if (!cart || cart.length === 0) {
+        if (khungGioHangTrong) khungGioHangTrong.style.display = "block";
+        if (khungThanhToanChinh) khungThanhToanChinh.style.display = "none";
         return;
     }
 
-    if (emptySection) emptySection.style.display = 'none';
-    if (shippingContainer) shippingContainer.style.display = 'block';
+    if (khungGioHangTrong) khungGioHangTrong.style.display = "none";
+    if (khungThanhToanChinh) khungThanhToanChinh.style.display = "block";
 
-    const nameInput = document.getElementById('checkoutFullName');
-    const phoneInput = document.getElementById('checkoutPhone');
-    const emailInput = document.getElementById('checkoutEmail');
-    const provinceSelect = document.getElementById('checkoutProvince');
-    const districtInput = document.getElementById('checkoutDistrict');
-    const wardInput = document.getElementById('checkoutWard');
-    const addressInput = document.getElementById('checkoutAddress');
-    const noteInput = document.getElementById('checkoutNote');
-
-    // 2. Phục hồi dữ liệu tạm từ localStorage (để khi quay lại từ trang 2 không bị mất)
-    let savedShipping = null;
-    try {
-        const raw = localStorage.getItem('techstore_checkout_shipping');
-        if (raw) savedShipping = JSON.parse(raw);
-    } catch (e) {
-        savedShipping = null;
+    // 2. Khởi tạo danh sách địa chỉ và hiển thị địa chỉ mặc định
+    var danhSachDiaChi = layDanhSachDiaChi();
+    
+    // Tìm địa chỉ mặc định
+    var diaChiMacDinh = null;
+    for (var i = 0; i < danhSachDiaChi.length; i++) {
+        if (danhSachDiaChi[i].laMacDinh === true) {
+            diaChiMacDinh = danhSachDiaChi[i];
+            break;
+        }
+    }
+    // Nếu không có địa chỉ nào là mặc định, lấy phần tử đầu tiên
+    if (!diaChiMacDinh && danhSachDiaChi.length > 0) {
+        diaChiMacDinh = danhSachDiaChi[0];
     }
 
-    if (savedShipping) {
-        if (nameInput && savedShipping.fullName) nameInput.value = savedShipping.fullName;
-        if (phoneInput && savedShipping.phone) phoneInput.value = savedShipping.phone;
-        if (emailInput && savedShipping.email) emailInput.value = savedShipping.email;
-        if (provinceSelect && savedShipping.province) provinceSelect.value = savedShipping.province;
-        if (districtInput && savedShipping.district) districtInput.value = savedShipping.district;
-        if (wardInput && savedShipping.ward) wardInput.value = savedShipping.ward;
-        if (addressInput && savedShipping.address) addressInput.value = savedShipping.address;
-        if (noteInput && savedShipping.note) noteInput.value = savedShipping.note;
-        const methodInput = document.querySelector(`input[name="fulfillmentMethod"][value="${savedShipping.fulfillmentMethod || 'delivery'}"]`);
-        if (methodInput) methodInput.checked = true;
-        updateFulfillmentFields();
+    if (diaChiMacDinh) {
+        idDiaChiDangChon = diaChiMacDinh.id;
+    }
+
+    // Hiển thị địa chỉ lên giao diện chính
+    hienThiDiaChiDangChon();
+
+    // 3. Hiển thị danh sách sản phẩm từ giỏ hàng
+    hienThiDanhSachSanPham(cart);
+
+    // 4. Tính toán tổng tiền
+    tinhTongTien();
+}
+
+// ===================================================================
+// 3. QUẢN LÝ GIỎ HÀNG (LẤY TỪ LOCALSTORAGE)
+// ===================================================================
+function layGioHang() {
+    // Gọi hàm getCart() có sẵn từ main.js hoặc đọc trực tiếp từ localStorage
+    if (typeof getCart === "function") {
+        return getCart();
+    }
+    var duLieu = localStorage.getItem("techstore_cart_v2");
+    if (!duLieu) {
+        duLieu = localStorage.getItem("techstore_cart");
+    }
+    return duLieu ? JSON.parse(duLieu) : [];
+}
+
+// Định dạng số tiền sang chuẩn Việt Nam (ví dụ: 100000 -> 100.000 ₫)
+function dinhDangTien(soTien) {
+    if (typeof formatCurrency === "function") {
+        return formatCurrency(soTien);
+    }
+    return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(soTien);
+}
+
+// ===================================================================
+// 4. CÁC HÀM QUẢN LÝ ĐỊA CHỈ NHẬN HÀNG (MẢNG VÀ ĐỐI TƯỢNG)
+// ===================================================================
+
+// Lấy danh sách địa chỉ từ localStorage
+function layDanhSachDiaChi() {
+    var duLieuLuu = localStorage.getItem(KHOA_LUU_DIA_CHI);
+    if (duLieuLuu) {
+        return JSON.parse(duLieuLuu);
+    }
+    // Nếu chưa có, lưu mảng mẫu ban đầu vào localStorage và trả về
+    luuDanhSachDiaChi(danhSachDiaChiMacDinh);
+    return danhSachDiaChiMacDinh;
+}
+
+// Lưu mảng danh sách địa chỉ vào localStorage
+function luuDanhSachDiaChi(danhSach) {
+    localStorage.setItem(KHOA_LUU_DIA_CHI, JSON.stringify(danhSach));
+}
+
+// Lấy đối tượng địa chỉ đang được chọn
+function layDiaChiDangChon() {
+    var danhSach = layDanhSachDiaChi();
+    for (var i = 0; i < danhSach.length; i++) {
+        if (danhSach[i].id == idDiaChiDangChon) {
+            return danhSach[i];
+        }
+    }
+    return danhSach.length > 0 ? danhSach[0] : null;
+}
+
+// Hiển thị thông tin địa chỉ đang chọn lên trang chính
+function hienThiDiaChiDangChon() {
+    var diaChi = layDiaChiDangChon();
+    var tenVaSdtEl = document.getElementById("hienThiTenVaSdt");
+    var nhanMacDinhEl = document.getElementById("hienThiNhanMacDinh");
+    var diaChiChiTietEl = document.getElementById("hienThiDiaChiChiTiet");
+
+    if (!diaChi) {
+        if (tenVaSdtEl) tenVaSdtEl.innerText = "Chưa có địa chỉ nhận hàng";
+        if (nhanMacDinhEl) nhanMacDinhEl.style.display = "none";
+        if (diaChiChiTietEl) diaChiChiTietEl.innerText = "Vui lòng bấm Thay Đổi để thêm địa chỉ nhận hàng";
         return;
     }
 
-    updateFulfillmentFields();
+    if (tenVaSdtEl) {
+        tenVaSdtEl.innerText = diaChi.hoTen + " (" + diaChi.soDienThoai + ")";
+    }
 
-    // 3. Nếu chưa có dữ liệu lưu tạm, tự động điền thông tin từ tài khoản đã đăng nhập
-    const currentUser = typeof getCurrentUser === 'function' ? getCurrentUser() : null;
-    if (currentUser) {
-        if (nameInput && !nameInput.value) nameInput.value = currentUser.fullName || currentUser.username || '';
-        if (phoneInput && !phoneInput.value) phoneInput.value = currentUser.phone || '';
-        if (emailInput && !emailInput.value) emailInput.value = currentUser.email || '';
+    if (nhanMacDinhEl) {
+        nhanMacDinhEl.style.display = diaChi.laMacDinh ? "inline-block" : "none";
+    }
+
+    if (diaChiChiTietEl) {
+        var diaChiDayDu = diaChi.diaChiChiTiet + ", " + diaChi.phuongXa + ", " + diaChi.quanHuyen + ", " + diaChi.tinhThanh;
+        diaChiChiTietEl.innerText = diaChiDayDu;
     }
 }
 
-function updateFulfillmentFields() {
-    const pickup = document.getElementById('fulfillmentPickup')?.checked;
-    ['checkoutProvince', 'checkoutDistrict', 'checkoutWard', 'checkoutAddress'].forEach(id => {
-        const field = document.getElementById(id);
-        if (field) field.required = !pickup;
-    });
-    const addressField = document.getElementById('checkoutAddress');
-    if (addressField) addressField.closest('.col-12')?.classList.toggle('d-none', Boolean(pickup));
-    ['checkoutProvince', 'checkoutDistrict', 'checkoutWard'].forEach(id => {
-        const field = document.getElementById(id);
-        if (field) field.closest('.col-12')?.classList.toggle('d-none', Boolean(pickup));
-    });
+// Mở Modal Quản lý & Chọn địa chỉ
+function moModalChonDiaChi() {
+    var modal = document.getElementById("modalChonDiaChi");
+    if (modal) modal.style.display = "flex";
+    hienThiDanhSachDiaChiTrongModal();
 }
 
-// Kiểm tra dữ liệu và lưu tạm sang trang 2 (Xử lý đơn hàng)
-function goToOrderReviewPage() {
-    const cart = typeof getCart === 'function' ? getCart() : [];
-    if (!cart || !cart.some(item => item.selected !== false)) {
-        showToast('Vui lòng chọn ít nhất một sản phẩm để thanh toán.', 'warning');
-        initCheckoutShippingPage();
+// Đóng Modal Quản lý địa chỉ
+function dongModalChonDiaChi() {
+    var modal = document.getElementById("modalChonDiaChi");
+    if (modal) modal.style.display = "none";
+}
+
+// Render danh sách địa chỉ vào bên trong Modal
+function hienThiDanhSachDiaChiTrongModal() {
+    var danhSach = layDanhSachDiaChi();
+    var container = document.getElementById("danhSachDiaChiModalContainer");
+    if (!container) return;
+
+    if (danhSach.length === 0) {
+        container.innerHTML = '<div class="text-center text-muted py-4">Chưa có địa chỉ nào. Bấm nút Thêm Địa Chỉ Mới bên trên để thêm.</div>';
         return;
     }
 
-    const nameInput = document.getElementById('checkoutFullName');
-    const phoneInput = document.getElementById('checkoutPhone');
-    const emailInput = document.getElementById('checkoutEmail');
-    const provinceSelect = document.getElementById('checkoutProvince');
-    const districtInput = document.getElementById('checkoutDistrict');
-    const wardInput = document.getElementById('checkoutWard');
-    const addressInput = document.getElementById('checkoutAddress');
-    const noteInput = document.getElementById('checkoutNote');
+    var html = "";
+    for (var i = 0; i < danhSach.length; i++) {
+        var dc = danhSach[i];
+        var isChecked = (dc.id == idDiaChiDangChon) ? "checked" : "";
+        var diaChiDayDu = dc.diaChiChiTiet + ", " + dc.phuongXa + ", " + dc.quanHuyen + ", " + dc.tinhThanh;
 
-    if (!nameInput || !phoneInput || !provinceSelect || !districtInput || !wardInput || !addressInput) {
+        html += '<div class="shopee-address-item">';
+        // Radio chọn địa chỉ này
+        html += '  <div class="pt-1">';
+        html += '    <input type="radio" name="radioChonDiaChi" value="' + dc.id + '" ' + isChecked + ' onchange="chonDiaChiTam(' + dc.id + ')">';
+        html += '  </div>';
+
+        // Thông tin địa chỉ
+        html += '  <div class="flex-grow-1">';
+        html += '    <div class="d-flex flex-wrap align-items-center gap-2 mb-1">';
+        html += '      <strong class="text-dark">' + dc.hoTen + '</strong>';
+        html += '      <span class="text-muted small">| ' + dc.soDienThoai + '</span>';
+        if (dc.laMacDinh) {
+            html += '  <span class="badge-shopee-default">Mặc định</span>';
+        }
+        html += '    </div>';
+        html += '    <div class="text-secondary small mb-2">' + diaChiDayDu + '</div>';
+
+        // Các nút thao tác: Cập nhật, Xóa, Thiết lập mặc định
+        html += '    <div class="d-flex gap-3 small">';
+        html += '      <a href="javascript:void(0)" class="text-primary text-decoration-none" onclick="moFormSuaDiaChi(' + dc.id + ')">Cập nhật</a>';
+        html += '      <a href="javascript:void(0)" class="text-danger text-decoration-none" onclick="xoaDiaChi(' + dc.id + ')">Xóa</a>';
+        if (!dc.laMacDinh) {
+            html += '  <a href="javascript:void(0)" class="text-secondary text-decoration-none" onclick="thietLapMacDinh(' + dc.id + ')">Thiết lập mặc định</a>';
+        }
+        html += '    </div>';
+        html += '  </div>';
+        html += '</div>';
+    }
+
+    container.innerHTML = html;
+}
+
+// Tạm thời chọn địa chỉ khi người dùng click vào radio
+var idTamDangChon = null;
+function chonDiaChiTam(id) {
+    idTamDangChon = id;
+}
+
+// Xác nhận địa chỉ đã chọn từ Modal
+function xacNhanChonDiaChi() {
+    if (idTamDangChon) {
+        idDiaChiDangChon = idTamDangChon;
+    }
+    hienThiDiaChiDangChon();
+    dongModalChonDiaChi();
+}
+
+// Thiết lập 1 địa chỉ làm mặc định
+function thietLapMacDinh(id) {
+    var danhSach = layDanhSachDiaChi();
+    for (var i = 0; i < danhSach.length; i++) {
+        if (danhSach[i].id == id) {
+            danhSach[i].laMacDinh = true;
+        } else {
+            danhSach[i].laMacDinh = false;
+        }
+    }
+    luuDanhSachDiaChi(danhSach);
+    idDiaChiDangChon = id;
+    hienThiDanhSachDiaChiTrongModal();
+    hienThiDiaChiDangChon();
+}
+
+// Xóa một địa chỉ khỏi danh sách
+function xoaDiaChi(id) {
+    var danhSach = layDanhSachDiaChi();
+    if (danhSach.length <= 1) {
+        alert("Bạn cần giữ lại ít nhất 1 địa chỉ nhận hàng!");
         return;
     }
 
-    const fullName = nameInput.value.trim();
-    const phone = phoneInput.value.trim();
-    const email = emailInput ? emailInput.value.trim() : '';
-    const province = provinceSelect.value.trim();
-    const district = districtInput.value.trim();
-    const ward = wardInput.value.trim();
-    const address = addressInput.value.trim();
-    const note = noteInput ? noteInput.value.trim() : '';
-    const fulfillmentMethod = document.querySelector('input[name="fulfillmentMethod"]:checked')?.value || 'delivery';
+    var xacNhan = confirm("Bạn có chắc chắn muốn xóa địa chỉ này không?");
+    if (!xacNhan) return;
 
-    // Xóa các trạng thái lỗi cũ
-    [nameInput, phoneInput, emailInput, provinceSelect, districtInput, wardInput, addressInput].forEach(el => {
-        if (el) el.classList.remove('is-invalid');
-    });
-
-    let hasError = false;
-
-    // 1. Kiểm tra Họ và tên (tối thiểu 2 ký tự)
-    if (!fullName || fullName.length < 2) {
-        nameInput.classList.add('is-invalid');
-        nameInput.focus();
-        hasError = true;
-    }
-
-    // 2. Kiểm tra Số điện thoại (10 số bắt đầu bằng số 0)
-    const phoneRegex = /^0[0-9]{9}$/;
-    if (!phone || !phoneRegex.test(phone)) {
-        phoneInput.classList.add('is-invalid');
-        if (!hasError) phoneInput.focus();
-        hasError = true;
-    }
-
-    // 3. Kiểm tra Email (nếu có nhập thì phải hợp lệ)
-    if (email) {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(email)) {
-            emailInput.classList.add('is-invalid');
-            if (!hasError) emailInput.focus();
-            hasError = true;
+    // Tìm vị trí của địa chỉ cần xóa trong mảng
+    var viTri = -1;
+    for (var i = 0; i < danhSach.length; i++) {
+        if (danhSach[i].id == id) {
+            viTri = i;
+            break;
         }
     }
 
-    // 4. Kiểm tra Tỉnh / Thành phố
-    if (fulfillmentMethod === 'delivery' && !province) {
-        provinceSelect.classList.add('is-invalid');
-        if (!hasError) provinceSelect.focus();
-        hasError = true;
+    if (viTri > -1) {
+        danhSach.splice(viTri, 1);
+        // Nếu địa chỉ vừa xóa là địa chỉ đang chọn, chuyển sang phần tử đầu tiên
+        if (idDiaChiDangChon == id) {
+            idDiaChiDangChon = danhSach[0].id;
+        }
+        luuDanhSachDiaChi(danhSach);
+        hienThiDanhSachDiaChiTrongModal();
+        hienThiDiaChiDangChon();
+    }
+}
+
+// Mở Form Thêm địa chỉ mới
+function moFormThemDiaChi() {
+    var modal = document.getElementById("modalFormDiaChi");
+    var tieuDe = document.getElementById("tieuDeFormDiaChi");
+    if (tieuDe) tieuDe.innerText = "Địa chỉ mới";
+
+    // Xóa trắng các ô nhập
+    document.getElementById("inputDiaChiId").value = "";
+    document.getElementById("inputHoTen").value = "";
+    document.getElementById("inputSoDienThoai").value = "";
+    document.getElementById("selectTinhThanh").value = "Hà Nội";
+    document.getElementById("inputQuanHuyen").value = "";
+    document.getElementById("inputPhuongXa").value = "";
+    document.getElementById("inputDiaChiChiTiet").value = "";
+    document.getElementById("checkDatMacDinh").checked = false;
+
+    if (modal) modal.style.display = "flex";
+}
+
+// Mở Form Sửa địa chỉ đã có
+function moFormSuaDiaChi(id) {
+    var danhSach = layDanhSachDiaChi();
+    var diaChi = null;
+    for (var i = 0; i < danhSach.length; i++) {
+        if (danhSach[i].id == id) {
+            diaChi = danhSach[i];
+            break;
+        }
     }
 
-    // 5. Kiểm tra Quận / Huyện
-    if (fulfillmentMethod === 'delivery' && !district) {
-        districtInput.classList.add('is-invalid');
-        if (!hasError) districtInput.focus();
-        hasError = true;
-    }
+    if (!diaChi) return;
 
-    // 6. Kiểm tra Phường / Xã
-    if (fulfillmentMethod === 'delivery' && !ward) {
-        wardInput.classList.add('is-invalid');
-        if (!hasError) wardInput.focus();
-        hasError = true;
-    }
+    var modal = document.getElementById("modalFormDiaChi");
+    var tieuDe = document.getElementById("tieuDeFormDiaChi");
+    if (tieuDe) tieuDe.innerText = "Cập nhật địa chỉ";
 
-    // 7. Kiểm tra Địa chỉ chi tiết
-    if (fulfillmentMethod === 'delivery' && !address) {
-        addressInput.classList.add('is-invalid');
-        if (!hasError) addressInput.focus();
-        hasError = true;
-    }
+    // Điền thông tin cũ vào các ô nhập
+    document.getElementById("inputDiaChiId").value = diaChi.id;
+    document.getElementById("inputHoTen").value = diaChi.hoTen;
+    document.getElementById("inputSoDienThoai").value = diaChi.soDienThoai;
+    document.getElementById("selectTinhThanh").value = diaChi.tinhThanh;
+    document.getElementById("inputQuanHuyen").value = diaChi.quanHuyen;
+    document.getElementById("inputPhuongXa").value = diaChi.phuongXa;
+    document.getElementById("inputDiaChiChiTiet").value = diaChi.diaChiChiTiet;
+    document.getElementById("checkDatMacDinh").checked = diaChi.laMacDinh;
 
-    if (hasError) {
-        showToast('Vui lòng kiểm tra và điền đầy đủ các thông tin bắt buộc!', 'error');
+    if (modal) modal.style.display = "flex";
+}
+
+// Đóng Form Thêm/Sửa địa chỉ
+function dongFormDiaChi() {
+    var modal = document.getElementById("modalFormDiaChi");
+    if (modal) modal.style.display = "none";
+}
+
+// Lưu thông tin địa chỉ từ Form (Thêm hoặc Sửa)
+function luuThongTinDiaChi() {
+    var id = document.getElementById("inputDiaChiId").value;
+    var hoTen = document.getElementById("inputHoTen").value.trim();
+    var soDienThoai = document.getElementById("inputSoDienThoai").value.trim();
+    var tinhThanh = document.getElementById("selectTinhThanh").value.trim();
+    var quanHuyen = document.getElementById("inputQuanHuyen").value.trim();
+    var phuongXa = document.getElementById("inputPhuongXa").value.trim();
+    var diaChiChiTiet = document.getElementById("inputDiaChiChiTiet").value.trim();
+    var laMacDinh = document.getElementById("checkDatMacDinh").checked;
+
+    // Kiểm tra dữ liệu hợp lệ cơ bản
+    if (!hoTen || !soDienThoai || !tinhThanh || !quanHuyen || !phuongXa || !diaChiChiTiet) {
+        alert("Vui lòng điền đầy đủ các thông tin địa chỉ bắt buộc!");
         return;
     }
 
-    // 8. Lưu thông tin nhận hàng tạm thời vào LocalStorage
-    const shippingData = {
-        fullName: fullName,
-        phone: phone,
-        email: email,
-        province: province,
-        district: district,
-        ward: ward,
-        address: fulfillmentMethod === 'pickup' ? 'Nhận tại cửa hàng' : address,
-        fullAddress: fulfillmentMethod === 'pickup' ? 'Nhận tại cửa hàng' : `${address}, ${ward}, ${district}, ${province}`,
-        fulfillmentMethod,
-        note: note
+    // Kiểm tra số điện thoại (10 chữ số bắt đầu bằng số 0)
+    var phoneRegex = /^0[0-9]{9}$/;
+    if (!phoneRegex.test(soDienThoai)) {
+        alert("Số điện thoại không hợp lệ! Vui lòng nhập 10 chữ số bắt đầu bằng số 0.");
+        return;
+    }
+
+    var danhSach = layDanhSachDiaChi();
+
+    // Nếu người dùng chọn Đặt làm mặc định, hủy mặc định các địa chỉ cũ
+    if (laMacDinh) {
+        for (var i = 0; i < danhSach.length; i++) {
+            danhSach[i].laMacDinh = false;
+        }
+    }
+
+    if (id) {
+        // Trường hợp SỬA địa chỉ đã có
+        for (var i = 0; i < danhSach.length; i++) {
+            if (danhSach[i].id == id) {
+                danhSach[i].hoTen = hoTen;
+                danhSach[i].soDienThoai = soDienThoai;
+                danhSach[i].tinhThanh = tinhThanh;
+                danhSach[i].quanHuyen = quanHuyen;
+                danhSach[i].phuongXa = phuongXa;
+                danhSach[i].diaChiChiTiet = diaChiChiTiet;
+                danhSach[i].laMacDinh = laMacDinh;
+                break;
+            }
+        }
+    } else {
+        // Trường hợp THÊM MỚI địa chỉ
+        var idMoi = Date.now(); // tạo mã id duy nhất bằng thời gian hiện tại
+        var diaChiMoi = {
+            id: idMoi,
+            hoTen: hoTen,
+            soDienThoai: soDienThoai,
+            tinhThanh: tinhThanh,
+            quanHuyen: quanHuyen,
+            phuongXa: phuongXa,
+            diaChiChiTiet: diaChiChiTiet,
+            laMacDinh: laMacDinh
+        };
+        danhSach.push(diaChiMoi);
+        // Tự động chọn địa chỉ vừa thêm
+        idDiaChiDangChon = idMoi;
+    }
+
+    // Lưu vào localStorage
+    luuDanhSachDiaChi(danhSach);
+
+    // Cập nhật lại giao diện
+    hienThiDanhSachDiaChiTrongModal();
+    hienThiDiaChiDangChon();
+    dongFormDiaChi();
+}
+
+// ===================================================================
+// 5. HIỂN THỊ DANH SÁCH SẢN PHẨM THANH TOÁN TỪ GIỎ HÀNG
+// ===================================================================
+function hienThiDanhSachSanPham(cart) {
+    var container = document.getElementById("danhSachSanPhamContainer");
+    if (!container) return;
+
+    var html = "";
+    var tongSoLuong = 0;
+
+    for (var i = 0; i < cart.length; i++) {
+        var sp = cart[i];
+        var thanhTien = sp.price * sp.quantity;
+        tongSoLuong += sp.quantity;
+
+        // Phân loại hàng (Màu sắc, Dung lượng nếu có)
+        var phanLoai = "";
+        if (sp.color || sp.storage) {
+            phanLoai = (sp.color ? sp.color : "") + (sp.storage ? " - " + sp.storage : "");
+        } else {
+            phanLoai = "Tiêu chuẩn";
+        }
+
+        html += '<div class="shopee-product-row row g-2 align-items-center m-0">';
+        
+        // Cột Sản phẩm: Ảnh, tên và phân loại
+        html += '  <div class="col-12 col-md-6 d-flex align-items-center gap-3">';
+        html += '    <img src="' + sp.image + '" alt="' + sp.name + '" class="shopee-product-img">';
+        html += '    <div>';
+        html += '      <div class="fw-bold text-dark small text-truncate" style="max-width: 320px;" title="' + sp.name + '">' + sp.name + '</div>';
+        html += '      <div class="text-muted small">Phân loại: ' + phanLoai + '</div>';
+        html += '    </div>';
+        html += '  </div>';
+
+        // Cột Đơn giá
+        html += '  <div class="col-4 col-md-2 text-md-center small">';
+        html += '    <span class="d-md-none text-muted">Đơn giá: </span>';
+        html += '    <span class="text-dark">' + dinhDangTien(sp.price) + '</span>';
+        html += '  </div>';
+
+        // Cột Số lượng
+        html += '  <div class="col-4 col-md-2 text-md-center small">';
+        html += '    <span class="d-md-none text-muted">SL: </span>';
+        html += '    <span class="text-dark">x' + sp.quantity + '</span>';
+        html += '  </div>';
+
+        // Cột Thành tiền
+        html += '  <div class="col-4 col-md-2 text-end fw-bold text-shopee">';
+        html += '    ' + dinhDangTien(thanhTien);
+        html += '  </div>';
+
+        html += '</div>';
+    }
+
+    container.innerHTML = html;
+
+    var tongSoLuongEl = document.getElementById("hienThiTongSoLuong");
+    if (tongSoLuongEl) tongSoLuongEl.innerText = tongSoLuong;
+}
+
+// ===================================================================
+// 6. XỬ LÝ PHƯƠNG THỨC VẬN CHUYỂN
+// ===================================================================
+function thayDoiVanChuyen() {
+    var selectEl = document.getElementById("selectVanChuyen");
+    var loaiVanChuyen = selectEl ? selectEl.value : "nhanh";
+
+    if (loaiVanChuyen === "hoatoc") {
+        phiVanChuyenHienTai = 50000;
+    } else if (loaiVanChuyen === "tietkiem") {
+        phiVanChuyenHienTai = 15000;
+    } else {
+        phiVanChuyenHienTai = 30000;
+    }
+
+    var hienThiTienShipEl = document.getElementById("hienThiTienShip");
+    if (hienThiTienShipEl) {
+        hienThiTienShipEl.innerText = dinhDangTien(phiVanChuyenHienTai);
+    }
+
+    tinhTongTien();
+}
+
+// ===================================================================
+// 7. XỬ LÝ VOUCHER (MÃ GIẢM GIÁ)
+// ===================================================================
+function thayDoiVoucher() {
+    var selectEl = document.getElementById("selectVoucher");
+    maVoucherHienTai = selectEl ? selectEl.value : "";
+    var nhanEl = document.getElementById("hienThiNhanVoucher");
+
+    if (maVoucherHienTai === "GIAM20K") {
+        if (nhanEl) nhanEl.innerText = "Đã áp dụng mã Giảm 20.000₫";
+    } else if (maVoucherHienTai === "GIAM10PT") {
+        if (nhanEl) nhanEl.innerText = "Đã áp dụng mã Giảm 10%";
+    } else if (maVoucherHienTai === "FREESHIP") {
+        if (nhanEl) nhanEl.innerText = "Đã áp dụng Freeship";
+    } else {
+        if (nhanEl) nhanEl.innerText = "Chưa chọn mã";
+    }
+
+    tinhTongTien();
+}
+
+// ===================================================================
+// 8. XỬ LÝ CHỌN PHƯƠNG THỨC THANH TOÁN (COD HOẶC CHUYỂN KHOẢN)
+// ===================================================================
+function chonPhuongThucThanhToan(loai) {
+    phuongThucThanhToanHienTai = loai;
+
+    var optCOD = document.getElementById("optCOD");
+    var optBank = document.getElementById("optBank");
+    var khungNganHang = document.getElementById("khungThongTinNganHang");
+
+    if (loai === "BANK") {
+        if (optCOD) optCOD.classList.remove("active");
+        if (optBank) optBank.classList.add("active");
+        if (khungNganHang) khungNganHang.style.display = "block";
+    } else {
+        if (optCOD) optCOD.classList.add("active");
+        if (optBank) optBank.classList.remove("active");
+        if (khungNganHang) khungNganHang.style.display = "none";
+    }
+}
+
+// ===================================================================
+// 9. TÍNH TOÁN VÀ HIỂN THỊ TỔNG TIỀN THANH TOÁN
+// ===================================================================
+function tinhTongTien() {
+    var cart = layGioHang();
+    
+    // 1. Tính tổng tiền hàng
+    var tongTienHang = 0;
+    for (var i = 0; i < cart.length; i++) {
+        tongTienHang += (cart[i].price * cart[i].quantity);
+    }
+
+    // 2. Tính giảm giá theo Voucher
+    var giamGiaShip = 0;
+    var giamGiaVoucher = 0;
+
+    if (maVoucherHienTai === "FREESHIP") {
+        // Giảm tối đa tiền ship hiện tại
+        giamGiaShip = phiVanChuyenHienTai > 30000 ? 30000 : phiVanChuyenHienTai;
+    } else if (maVoucherHienTai === "GIAM20K") {
+        giamGiaVoucher = 20000;
+    } else if (maVoucherHienTai === "GIAM10PT") {
+        giamGiaVoucher = Math.round(tongTienHang * 0.1);
+        // Tối đa giảm 50.000₫
+        if (giamGiaVoucher > 50000) giamGiaVoucher = 50000;
+    }
+
+    // 3. Tính tổng thanh toán cuối cùng
+    var tongThanhToan = tongTienHang + phiVanChuyenHienTai - giamGiaShip - giamGiaVoucher;
+    if (tongThanhToan < 0) tongThanhToan = 0;
+
+    // 4. Hiển thị lên giao diện
+    var tongTienHangNhoEl = document.getElementById("hienThiTongTienHangNho");
+    var tongTienHangEl = document.getElementById("hienThiTongTienHang");
+    var tongPhiShipEl = document.getElementById("hienThiTongPhiShip");
+    var dongGiamGiaShipEl = document.getElementById("dongGiamGiaShip");
+    var hienThiGiamGiaShipEl = document.getElementById("hienThiGiamGiaShip");
+    var dongGiamGiaVoucherEl = document.getElementById("dongGiamGiaVoucher");
+    var hienThiGiamGiaVoucherEl = document.getElementById("hienThiGiamGiaVoucher");
+    var tongThanhToanEl = document.getElementById("hienThiTongThanhToan");
+
+    if (tongTienHangNhoEl) tongTienHangNhoEl.innerText = dinhDangTien(tongTienHang);
+    if (tongTienHangEl) tongTienHangEl.innerText = dinhDangTien(tongTienHang);
+    if (tongPhiShipEl) tongPhiShipEl.innerText = dinhDangTien(phiVanChuyenHienTai);
+
+    // Hiển thị dòng giảm ship nếu có
+    if (giamGiaShip > 0) {
+        if (dongGiamGiaShipEl) dongGiamGiaShipEl.style.display = "flex";
+        if (hienThiGiamGiaShipEl) hienThiGiamGiaShipEl.innerText = "- " + dinhDangTien(giamGiaShip);
+    } else {
+        if (dongGiamGiaShipEl) dongGiamGiaShipEl.style.display = "none";
+    }
+
+    // Hiển thị dòng voucher giảm giá nếu có
+    if (giamGiaVoucher > 0) {
+        if (dongGiamGiaVoucherEl) dongGiamGiaVoucherEl.style.display = "flex";
+        if (hienThiGiamGiaVoucherEl) hienThiGiamGiaVoucherEl.innerText = "- " + dinhDangTien(giamGiaVoucher);
+    } else {
+        if (dongGiamGiaVoucherEl) dongGiamGiaVoucherEl.style.display = "none";
+    }
+
+    // Hiển thị tổng thanh toán
+    if (tongThanhToanEl) tongThanhToanEl.innerText = dinhDangTien(tongThanhToan);
+
+    return {
+        tongTienHang: tongTienHang,
+        phiVanChuyen: phiVanChuyenHienTai,
+        giamGiaShip: giamGiaShip,
+        giamGiaVoucher: giamGiaVoucher,
+        tongThanhToan: tongThanhToan
+    };
+}
+
+// ===================================================================
+// 10. XỬ LÝ KHI NGƯỜI DÙNG BẤM "ĐẶT HÀNG"
+// ===================================================================
+function xuLyDatHang() {
+    var cart = layGioHang();
+    if (!cart || cart.length === 0) {
+        alert("Giỏ hàng của bạn đang trống! Vui lòng chọn sản phẩm vào giỏ trước.");
+        return;
+    }
+
+    var diaChi = layDiaChiDangChon();
+    if (!diaChi) {
+        alert("Vui lòng chọn hoặc thêm địa chỉ nhận hàng trước khi đặt hàng!");
+        moModalChonDiaChi();
+        return;
+    }
+
+    var btnDatHang = document.getElementById("btnDatHang");
+    if (btnDatHang) {
+        if (btnDatHang.disabled) return;
+        btnDatHang.disabled = true;
+        btnDatHang.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i> Đang xử lý đặt hàng...';
+    }
+
+    // 1. Trừ số lượng tồn kho của từng phiên bản trong PRODUCTS
+    if (typeof PRODUCTS !== "undefined" && Array.isArray(PRODUCTS)) {
+        for (var i = 0; i < cart.length; i++) {
+            var item = cart[i];
+            for (var p = 0; p < PRODUCTS.length; p++) {
+                if (PRODUCTS[p].id === item.id && PRODUCTS[p].variants) {
+                    for (var v = 0; v < PRODUCTS[p].variants.length; v++) {
+                        if (PRODUCTS[p].variants[v].sku === item.sku) {
+                            if (PRODUCTS[p].variants[v].stock >= item.quantity) {
+                                PRODUCTS[p].variants[v].stock -= item.quantity;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        if (typeof saveStoredProducts === "function") {
+            saveStoredProducts(PRODUCTS);
+        }
+    }
+
+    // 2. Tính tiền và tạo mã đơn hàng
+    var ketQuaTien = tinhTongTien();
+    var maDonHang = "DH" + Math.floor(1000 + Math.random() * 9000);
+    var loiNhan = document.getElementById("inputLoiNhan") ? document.getElementById("inputLoiNhan").value.trim() : "";
+    var diaChiDayDu = diaChi.diaChiChiTiet + ", " + diaChi.phuongXa + ", " + diaChi.quanHuyen + ", " + diaChi.tinhThanh;
+
+    // Tóm tắt sản phẩm
+    var tomTatSanPham = [];
+    for (var k = 0; k < cart.length; k++) {
+        tomTatSanPham.push(cart[k].name + " x " + cart[k].quantity);
+    }
+
+    var tenPhuongThuc = (phuongThucThanhToanHienTai === "BANK") ? "Chuyển khoản ngân hàng" : "Thanh toán khi nhận hàng (COD)";
+    var currentUser = (typeof getCurrentUser === "function") ? getCurrentUser() : null;
+
+    // Tạo đối tượng đơn hàng mới
+    var donHangMoi = {
+        id: maDonHang,
+        userId: currentUser ? Number(currentUser.id) : null,
+        customer: diaChi.hoTen,
+        phone: diaChi.soDienThoai,
+        address: diaChiDayDu,
+        note: loiNhan,
+        paymentMethod: tenPhuongThuc,
+        shippingMethod: document.getElementById("selectVanChuyen").value,
+        total: ketQuaTien.tongThanhToan,
+        shippingFee: ketQuaTien.phiVanChuyen,
+        discount: ketQuaTien.giamGiaShip + ketQuaTien.giamGiaVoucher,
+        voucher: maVoucherHienTai,
+        date: new Date().toLocaleDateString("vi-VN") + " " + new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }),
+        status: "pending",
+        statusText: "Chờ xác nhận",
+        productSummary: tomTatSanPham.join(", "),
+        items: cart
     };
 
-    localStorage.setItem('techstore_checkout_shipping', JSON.stringify(shippingData));
+    // 3. Lưu đơn hàng vào danh sách đơn hàng của hệ thống (localStorage)
+    var orders = (typeof getStoredOrders === "function") ? getStoredOrders() : [];
+    orders.unshift(donHangMoi);
+    if (typeof saveStoredOrders === "function") {
+        saveStoredOrders(orders);
+    } else {
+        localStorage.setItem("techstore_orders_v2", JSON.stringify(orders));
+        localStorage.setItem("techstore_orders", JSON.stringify(orders));
+    }
 
-    // 9. Chuyển sang Trang 2: Xử lý & Xác nhận đơn hàng (URL riêng biệt)
-    window.location.href = 'index.php?action=checkout-confirm';
+    // 4. Xóa giỏ hàng sau khi đặt thành công
+    if (typeof saveCart === "function") {
+        saveCart([]);
+    } else {
+        localStorage.setItem("techstore_cart_v2", JSON.stringify([]));
+        localStorage.setItem("techstore_cart", JSON.stringify([]));
+        if (typeof updateCartUI === "function") updateCartUI();
+    }
+
+    // 5. Hiển thị giao diện Đặt hàng thành công
+    var khungThanhToanChinh = document.getElementById("khungThanhToanChinh");
+    var khungDatHangThanhCong = document.getElementById("khungDatHangThanhCong");
+
+    document.getElementById("thanhCongMaDonHang").innerText = "#" + maDonHang;
+    document.getElementById("thanhCongTenNguoiNhan").innerText = donHangMoi.customer;
+    document.getElementById("thanhCongSoDienThoai").innerText = donHangMoi.phone;
+    document.getElementById("thanhCongDiaChi").innerText = donHangMoi.address;
+    document.getElementById("thanhCongPhuongThuc").innerText = tenPhuongThuc;
+    document.getElementById("thanhCongTongTien").innerText = dinhDangTien(ketQuaTien.tongThanhToan);
+
+    if (khungThanhToanChinh) khungThanhToanChinh.style.display = "none";
+    if (khungDatHangThanhCong) khungDatHangThanhCong.style.display = "block";
+
+    // Cuộn lên đầu trang
+    window.scrollTo({ top: 0, behavior: "smooth" });
+
+    if (typeof showToast === "function") {
+        showToast("Đặt hàng thành công! Mã đơn: #" + maDonHang, "success");
+    }
 }
 </script>
